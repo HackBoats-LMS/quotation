@@ -353,7 +353,11 @@ export async function POST(req: NextRequest) {
       "quotations",
       filename
     );
-    await fs.writeFile(savePath, generatedBuffer);
+    try {
+      await fs.writeFile(savePath, generatedBuffer);
+    } catch (fsErr) {
+      console.warn("Could not save PDF to filesystem (likely read-only environment like Vercel). Skipping local write.", fsErr);
+    }
 
     // Save record in DB
     const subtotalCalc = body.lineItems.reduce(

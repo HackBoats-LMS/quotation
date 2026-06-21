@@ -5,23 +5,24 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { saveTemplateMappings } from "../../actions";
 import GenerateModal from "./GenerateModal";
-import { 
-  ArrowLeft, 
-  Save, 
-  Loader2, 
-  Check, 
-  AlertCircle, 
-  Trash2, 
+import {
+  ArrowLeft,
+  Save,
+  Loader2,
+  Check,
+  AlertCircle,
+  Trash2,
   Move,
   ChevronLeft,
   ChevronRight,
   FileText,
   HelpCircle,
+  Scissors,
+  FileDown,
   Plus,
   X,
   Maximize2,
-  Minimize2,
-  FileDown
+  Minimize2
 } from "lucide-react";
 
 // Available fields metadata
@@ -67,7 +68,6 @@ export default function EditorClient({ template }: EditorClientProps) {
   const [isPending, startTransition] = useTransition();
   const [saveStatus, setSaveStatus] = useState<{ success: boolean; message: string } | null>(null);
   const [showGenerateModal, setShowGenerateModal] = useState(false);
-  const [isFullscreen, setIsFullscreen] = useState(false);
 
   // Restore custom field definitions from saved mappings
   const parseInitialCustomFields = (): CustomFieldDef[] => {
@@ -98,7 +98,7 @@ export default function EditorClient({ template }: EditorClientProps) {
             page: coord.page || 1,
             x: coord.x,
             y: coord.y,
-            fontSize: coord.fontSize || 10,
+            fontSize: coord.fontSize,
           });
         }
       });
@@ -113,20 +113,13 @@ export default function EditorClient({ template }: EditorClientProps) {
   const [customFields, setCustomFields] = useState<CustomFieldDef[]>(initialCustomFields);
   const [newFieldLabel, setNewFieldLabel] = useState("");
   const [placedFields, setPlacedFields] = useState<PlacedField[]>(parseInitialMappings(initialCustomFields));
-  const [selectedFieldId, setSelectedFieldId] = useState<string | null>(null);
   const [currentPage, setCurrentPage] = useState(1);
   const [numPages, setNumPages] = useState(1);
   const [pdfLoading, setPdfLoading] = useState(true);
   const [pdfError, setPdfError] = useState(false);
-
-  const canvasRef = useRef<HTMLCanvasElement>(null);
-  const containerRef = useRef<HTMLDivElement>(null);
-  const renderStateRef = useRef<{
-    rendering: boolean;
-    queuedPageNum: number | null;
-    queuedFullscreen: boolean | null;
-  }>({ rendering: false, queuedPageNum: null, queuedFullscreen: null });
-  const pdfDocRef = useRef<any>(null);
+  const [selectedFieldId, setSelectedFieldId] = useState<string | null>(null);
+  const [isFullscreen, setIsFullscreen] = useState(false);
+  const toggleFullscreen = () => setIsFullscreen(!isFullscreen);
 
   // Keyboard nudging for selected field
   useEffect(() => {
@@ -140,9 +133,9 @@ export default function EditorClient({ template }: EditorClientProps) {
 
       if (["ArrowUp", "ArrowDown", "ArrowLeft", "ArrowRight"].includes(e.key)) {
         e.preventDefault(); // prevent scrolling
-        
+
         // 0.1% for precision, hold Shift for 1% jumps
-        const nudgeAmount = e.shiftKey ? 1 : 0.1; 
+        const nudgeAmount = e.shiftKey ? 1 : 0.1;
 
         setPlacedFields(prev => prev.map(f => {
           if (f.id !== selectedFieldId) return f;
@@ -166,6 +159,10 @@ export default function EditorClient({ template }: EditorClientProps) {
     return () => window.removeEventListener("keydown", handleKeyDown);
   }, [selectedFieldId]);
 
+  const canvasRef = useRef<HTMLCanvasElement>(null);
+  const containerRef = useRef<HTMLDivElement>(null);
+  const pdfDocRef = useRef<any>(null);
+
   // Load PDF.js dynamically
   useEffect(() => {
     let active = true;
@@ -175,20 +172,20 @@ export default function EditorClient({ template }: EditorClientProps) {
         setPdfLoading(true);
         setPdfError(false);
         const pdfjs = await import("pdfjs-dist");
-        
+
         // Use local worker file from public directory to bypass CDN and CORS issues
         pdfjs.GlobalWorkerOptions.workerSrc = "/pdf.worker.min.mjs";
 
         const loadingTask = pdfjs.getDocument({ url: template.pdf_path });
         const pdf = await loadingTask.promise;
-        
+
         if (!active) return;
         pdfDocRef.current = pdf;
         setNumPages(pdf.numPages);
         setPdfLoading(false);
 
         // Render first page
-        renderPage(1, isFullscreen);
+        renderPage(1);
       } catch (err) {
         console.error("PDF.js loading error:", err);
         if (active) {
@@ -205,36 +202,17 @@ export default function EditorClient({ template }: EditorClientProps) {
   }, [template.pdf_path]);
 
   // Render a specific page of the PDF to the canvas
-  const renderPage = async (pageNum: number, fullscreen?: boolean) => {
-    const isFS = fullscreen !== undefined ? fullscreen : isFullscreen;
-
-    // If a render is already in progress, queue this request
-    if (renderStateRef.current.rendering) {
-      renderStateRef.current.queuedPageNum = pageNum;
-      renderStateRef.current.queuedFullscreen = isFS;
-      return;
-    }
-
-    renderStateRef.current.rendering = true;
+  const renderPage = async (pageNum: number) => {
+    if (!pdfDocRef.current || !canvasRef.current) return;
 
     try {
-      if (!pdfDocRef.current || !canvasRef.current) {
-        renderStateRef.current.rendering = false;
-        return;
-      }
-
       const page = await pdfDocRef.current.getPage(pageNum);
       const canvas = canvasRef.current;
       const ctx = canvas.getContext("2d");
-      
-      if (!ctx) {
-        renderStateRef.current.rendering = false;
-        return;
-      }
+      if (!ctx) return;
 
-      // Always render PDF at a crisp 1440px (2x retina for 720px base) so it stays sharp. 
-      // The CSS width will scale it down, and 'cqi' will scale the fonts proportionally.
-      const displayWidth = 1440;
+      // We want to render at a standard display width (e.g. 680px) and scale accordingly
+      const displayWidth = 720;
       const unscaledViewport = page.getViewport({ scale: 1 });
       const scale = displayWidth / unscaledViewport.width;
       const viewport = page.getViewport({ scale });
@@ -247,30 +225,10 @@ export default function EditorClient({ template }: EditorClientProps) {
         canvasContext: ctx,
         viewport: viewport,
       };
-      
-      const renderTask = page.render(renderContext);
-      await renderTask.promise;
-      
-    } catch (e: any) {
-      if (e.name !== 'RenderingCancelledException') {
-        console.error("Error rendering page:", e);
-      }
-    } finally {
-      renderStateRef.current.rendering = false;
 
-      // Execute queued render if one came in while we were rendering
-      if (renderStateRef.current.queuedPageNum !== null) {
-        const nextReqPage = renderStateRef.current.queuedPageNum;
-        const nextReqFullscreen = renderStateRef.current.queuedFullscreen;
-        
-        renderStateRef.current.queuedPageNum = null;
-        renderStateRef.current.queuedFullscreen = null;
-        
-        // Dispatch to next tick to ensure canvas is fully freed
-        setTimeout(() => {
-          renderPage(nextReqPage, nextReqFullscreen === null ? undefined : nextReqFullscreen);
-        }, 0);
-      }
+      await page.render(renderContext).promise;
+    } catch (e) {
+      console.error("Error rendering page:", e);
     }
   };
 
@@ -278,14 +236,7 @@ export default function EditorClient({ template }: EditorClientProps) {
   const handlePageChange = (newPage: number) => {
     if (newPage < 1 || newPage > numPages) return;
     setCurrentPage(newPage);
-    renderPage(newPage, isFullscreen);
-  };
-
-  // Toggle Fullscreen
-  const toggleFullscreen = () => {
-    const newFsState = !isFullscreen;
-    setIsFullscreen(newFsState);
-    renderPage(currentPage, newFsState);
+    renderPage(newPage);
   };
 
   // Add field to page
@@ -299,11 +250,9 @@ export default function EditorClient({ template }: EditorClientProps) {
       page: currentPage,
       x: 35, // Add at center (35% x)
       y: 40, // Add at center (40% y)
-      fontSize: 10,
     };
 
     setPlacedFields(prev => [...prev, newField]);
-    setSelectedFieldId(fieldId);
   };
 
   // Remove field
@@ -353,7 +302,7 @@ export default function EditorClient({ template }: EditorClientProps) {
     const newY = Math.max(0, Math.min(95, initialY + percentDeltaY));
 
     // Update positioned state
-    setPlacedFields(prev => 
+    setPlacedFields(prev =>
       prev.map(f => f.id === fieldId ? { ...f, x: Number(newX.toFixed(2)), y: Number(newY.toFixed(2)) } : f)
     );
   };
@@ -380,7 +329,7 @@ export default function EditorClient({ template }: EditorClientProps) {
 
   const handleTouchMove = (e: TouchEvent) => {
     if (!dragStartRef.current || !containerRef.current) return;
-    
+
     // Prevent screen scroll while dragging
     e.preventDefault();
 
@@ -397,7 +346,7 @@ export default function EditorClient({ template }: EditorClientProps) {
     const newX = Math.max(0, Math.min(85, initialX + percentDeltaX));
     const newY = Math.max(0, Math.min(95, initialY + percentDeltaY));
 
-    setPlacedFields(prev => 
+    setPlacedFields(prev =>
       prev.map(f => f.id === fieldId ? { ...f, x: Number(newX.toFixed(2)), y: Number(newY.toFixed(2)) } : f)
     );
   };
@@ -427,7 +376,7 @@ export default function EditorClient({ template }: EditorClientProps) {
   // Save Mappings to Database
   const handleSave = () => {
     setSaveStatus(null);
-    
+
     // Convert array back to database format: { field_id: { page, x, y } }
     // Also persist _customFields metadata so custom fields survive a reload
     const mappings: Record<string, any> = {};
@@ -462,14 +411,14 @@ export default function EditorClient({ template }: EditorClientProps) {
   const activePageFields = placedFields.filter(f => f.page === currentPage);
 
   return (
-    <div className="flex flex-col h-screen bg-zinc-950 font-sans text-zinc-400 select-none selection:bg-indigo-500/30 overflow-hidden">
+    <div className="flex flex-col min-h-screen bg-zinc-100 dark:bg-zinc-950 font-sans text-zinc-900 dark:text-zinc-400 select-none">
 
       {/* Generate Quotation Modal */}
       {showGenerateModal && (() => {
         // Build live mapping from current editor state (don't rely on DB state)
-        const liveMappings: Record<string, { page: number; x: number; y: number }> = {};
+        const liveMappings: Record<string, { page: number; x: number; y: number; fontSize?: number }> = {};
         placedFields.forEach(field => {
-          liveMappings[field.id] = { page: field.page, x: field.x, y: field.y };
+          liveMappings[field.id] = { page: field.page, x: field.x, y: field.y, fontSize: field.fontSize };
         });
         return (
           <GenerateModal
@@ -481,20 +430,19 @@ export default function EditorClient({ template }: EditorClientProps) {
           />
         );
       })()}
-      
+
       {/* Header bar */}
-      <header className="sticky top-0 z-30 border-b border-white/10 bg-zinc-950 py-2.5 px-4 sm:px-6 flex flex-col sm:flex-row items-start sm:items-center justify-between shadow-sm gap-3 sm:gap-0 shrink-0">
+      <header className="sticky top-0 z-30 border-b border-zinc-200 bg-white/95 py-3 px-4 sm:px-6 dark:border-zinc-900 dark:bg-zinc-950/95 flex flex-col sm:flex-row items-start sm:items-center justify-between shadow-sm gap-3 sm:gap-0 shrink-0">
         <div className="flex items-center gap-3 w-full sm:w-auto">
           <Link
             href="/dashboard/templates"
-            className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border border-white/10 bg-white/5 text-zinc-300 hover:bg-white/10 hover:text-white transition-colors"
+            className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border border-zinc-200 bg-white text-zinc-650 hover:bg-zinc-50 dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-300 dark:hover:bg-zinc-850"
           >
             <ArrowLeft className="h-4 w-4" />
           </Link>
           <div className="min-w-0">
-            <h1 className="text-sm font-bold text-white flex items-center gap-1.5 truncate">
-              <span className="hidden sm:inline">Template Editor:</span> 
-              <span className="font-medium text-zinc-400 truncate">{template.name}</span>
+            <h1 className="text-sm font-bold text-zinc-950 dark:text-zinc-50 flex items-center gap-1.5 truncate">
+              <span className="hidden sm:inline">Template Editor:</span> <span className="font-semibold text-zinc-600 dark:text-zinc-300 truncate">{template.name}</span>
             </h1>
             <p className="text-[10px] text-zinc-500 truncate">Drag & drop variables onto your standard page grid</p>
           </div>
@@ -502,11 +450,10 @@ export default function EditorClient({ template }: EditorClientProps) {
 
         <div className="flex items-center gap-2 w-full sm:w-auto justify-end sm:justify-start">
           {saveStatus && (
-            <div className={`hidden sm:flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold ${
-              saveStatus.success 
-                ? "bg-emerald-500/10 text-emerald-400" 
-                : "bg-red-500/10 text-red-400"
-            }`}>
+            <div className={`hidden sm:flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold ${saveStatus.success
+                ? "bg-emerald-50 text-emerald-600 dark:bg-emerald-950/20 dark:text-emerald-400"
+                : "bg-red-50 text-red-600 dark:bg-red-950/20 dark:text-red-400"
+              }`}>
               {saveStatus.success ? <Check className="h-3.5 w-3.5" /> : <AlertCircle className="h-3.5 w-3.5" />}
               <span>{saveStatus.message}</span>
             </div>
@@ -515,7 +462,7 @@ export default function EditorClient({ template }: EditorClientProps) {
           <button
             onClick={handleSave}
             disabled={isPending}
-            className="flex-1 sm:flex-none flex justify-center items-center gap-1.5 rounded-lg border border-white/10 bg-white/5 px-4 py-2 text-xs font-semibold text-zinc-300 transition-colors hover:bg-white/10 hover:text-white disabled:opacity-50"
+            className="flex-1 sm:flex-none flex justify-center items-center gap-1.5 rounded-xl border border-zinc-200 bg-white px-4 py-2.5 text-xs font-semibold text-zinc-700 shadow-sm hover:bg-zinc-50 disabled:opacity-50 dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-300 dark:hover:bg-zinc-800"
           >
             {isPending ? (
               <Loader2 className="h-3.5 w-3.5 animate-spin" />
@@ -528,7 +475,7 @@ export default function EditorClient({ template }: EditorClientProps) {
 
           <button
             onClick={() => setShowGenerateModal(true)}
-            className="flex-1 sm:flex-none flex justify-center items-center gap-1.5 rounded-lg bg-white px-4 py-2 text-xs font-bold text-black shadow hover:bg-zinc-200 transition-colors"
+            className="flex-1 sm:flex-none flex justify-center items-center gap-1.5 rounded-xl bg-zinc-900 px-4 py-2.5 text-xs font-semibold text-white shadow hover:bg-zinc-800 dark:bg-zinc-50 dark:text-zinc-950 dark:hover:bg-zinc-200"
           >
             <FileDown className="h-3.5 w-3.5 shrink-0" />
             <span className="hidden sm:inline">Generate Quotation</span>
@@ -538,10 +485,10 @@ export default function EditorClient({ template }: EditorClientProps) {
       </header>
 
       {/* Editor Body Grid */}
-      <div className="flex flex-col lg:flex-row flex-1 overflow-hidden">
-        
+      <div className="flex flex-col lg:flex-row flex-1 overflow-hidden h-[calc(100vh-64px)]">
+
         {/* Left Side: Fields panel */}
-        <aside className="order-2 lg:order-1 w-full lg:w-64 h-1/3 min-h-[250px] lg:h-auto lg:min-h-0 border-t lg:border-t-0 lg:border-r border-white/10 bg-zinc-950 overflow-y-auto p-4 flex flex-col justify-between shrink-0">
+        <aside className="order-2 lg:order-1 w-full lg:w-64 h-[35vh] min-h-[250px] lg:h-auto lg:min-h-0 border-t lg:border-t-0 lg:border-r border-zinc-200 bg-white dark:border-zinc-900 dark:bg-zinc-950 overflow-y-auto p-5 flex flex-col justify-between shrink-0">
           <div className="space-y-6">
             <div>
               <h2 className="text-xs font-bold uppercase tracking-wider text-zinc-400 dark:text-zinc-500">
@@ -550,7 +497,7 @@ export default function EditorClient({ template }: EditorClientProps) {
               <p className="mt-1 text-[10px] text-zinc-500">Click a variables tag to overlay it onto your template canvas.</p>
             </div>
 
-            <div className="space-y-2">
+            <div className="space-y-2.5">
               {AVAILABLE_FIELDS.map((field) => {
                 const isPlaced = placedFields.some(f => f.id === field.id);
                 const placedOnActive = placedFields.find(f => f.id === field.id);
@@ -560,19 +507,18 @@ export default function EditorClient({ template }: EditorClientProps) {
                     key={field.id}
                     onClick={() => placeField(field.id, field.label)}
                     disabled={isPlaced}
-                    className={`w-full text-left flex items-center justify-between rounded-lg px-3 py-2 text-xs font-medium border transition-all ${
-                      isPlaced 
-                        ? "bg-black/40 border-transparent text-zinc-600 cursor-not-allowed"
-                        : "bg-white/5 border-white/5 text-zinc-300 hover:bg-white/10 hover:text-white"
-                    }`}
+                    className={`w-full text-left flex items-center justify-between rounded-xl px-3 py-2.5 text-xs font-semibold border transition-all ${isPlaced
+                        ? "bg-zinc-50 border-zinc-200 text-zinc-400 cursor-not-allowed dark:bg-zinc-900/20 dark:border-zinc-900 dark:text-zinc-600"
+                        : "bg-white border-zinc-200 text-zinc-800 hover:bg-zinc-50 dark:bg-zinc-900 dark:border-zinc-800 dark:text-zinc-200 dark:hover:bg-zinc-800"
+                      }`}
                   >
                     <span className="flex items-center gap-2">
-                      <span className="h-1.5 w-1.5 rounded-full bg-zinc-500"></span>
+                      <span className="h-1.5 w-1.5 rounded-full bg-zinc-900 dark:bg-zinc-50"></span>
                       {field.label}
                     </span>
                     {isPlaced && (
-                      <span className="text-[9px] font-medium bg-white/5 px-1.5 py-0.5 rounded text-zinc-500">
-                        Pg {placedOnActive?.page}
+                      <span className="text-[9px] font-medium bg-zinc-100 px-1.5 py-0.5 rounded text-zinc-500 dark:bg-zinc-800 dark:text-zinc-400">
+                        Page {placedOnActive?.page}
                       </span>
                     )}
                   </button>
@@ -581,8 +527,8 @@ export default function EditorClient({ template }: EditorClientProps) {
             </div>
 
             {/* Custom Fields Section */}
-            <div className="pt-4 border-t border-white/5">
-              <h3 className="text-[10px] font-bold uppercase tracking-wider text-zinc-500 mb-2">
+            <div className="pt-4 border-t border-zinc-100 dark:border-zinc-800/80">
+              <h3 className="text-[10px] font-bold uppercase tracking-wider text-zinc-400 dark:text-zinc-500 mb-2">
                 Custom Fields
               </h3>
 
@@ -597,25 +543,24 @@ export default function EditorClient({ template }: EditorClientProps) {
                         <button
                           onClick={() => placeField(field.id, field.label)}
                           disabled={isPlaced}
-                          className={`flex-1 text-left flex items-center justify-between rounded-lg px-3 py-2 text-xs font-medium border transition-all ${
-                            isPlaced
-                              ? "bg-indigo-500/5 border-transparent text-indigo-500/40 cursor-not-allowed"
-                              : "bg-indigo-500/10 border-indigo-500/20 text-indigo-300 hover:bg-indigo-500/20 hover:text-indigo-200"
-                          }`}
+                          className={`flex-1 text-left flex items-center justify-between rounded-xl px-3 py-2.5 text-xs font-semibold border transition-all ${isPlaced
+                              ? "bg-indigo-50 border-indigo-200 text-indigo-400 cursor-not-allowed dark:bg-indigo-950/20 dark:border-indigo-900 dark:text-indigo-600"
+                              : "bg-white border-indigo-200 text-indigo-700 hover:bg-indigo-50 dark:bg-zinc-900 dark:border-indigo-900/50 dark:text-indigo-300 dark:hover:bg-zinc-800"
+                            }`}
                         >
                           <span className="flex items-center gap-2">
                             <span className="h-1.5 w-1.5 rounded-full bg-indigo-500"></span>
                             {field.label}
                           </span>
                           {isPlaced && (
-                            <span className="text-[9px] font-medium bg-indigo-500/10 px-1.5 py-0.5 rounded text-indigo-400">
-                              Pg {placedInfo?.page}
+                            <span className="text-[9px] font-medium bg-indigo-100 px-1.5 py-0.5 rounded text-indigo-500 dark:bg-indigo-950/30 dark:text-indigo-400">
+                              Page {placedInfo?.page}
                             </span>
                           )}
                         </button>
                         <button
                           onClick={() => handleRemoveCustomField(field.id)}
-                          className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg border border-white/5 text-zinc-500 hover:bg-red-500/10 hover:border-red-500/20 hover:text-red-400 transition-colors"
+                          className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg border border-zinc-200 text-zinc-400 hover:border-red-300 hover:text-red-500 dark:border-zinc-800 dark:hover:border-red-900 transition-colors"
                           title="Delete custom field"
                         >
                           <X className="h-3 w-3" />
@@ -634,75 +579,113 @@ export default function EditorClient({ template }: EditorClientProps) {
                   onChange={(e) => setNewFieldLabel(e.target.value)}
                   onKeyDown={(e) => e.key === "Enter" && handleAddCustomField()}
                   placeholder="e.g. Validity Period"
-                  className="flex-1 min-w-0 rounded-lg border border-white/10 bg-black/40 px-3 py-2 text-xs text-white placeholder-zinc-600 focus:border-indigo-500 focus:bg-black focus:outline-none"
+                  className="flex-1 min-w-0 rounded-xl border border-zinc-200 bg-zinc-50 px-3 py-2 text-xs text-zinc-900 placeholder-zinc-400 focus:border-indigo-400 focus:bg-white focus:outline-none dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-50 dark:placeholder-zinc-600 dark:focus:border-indigo-500"
                 />
                 <button
                   onClick={handleAddCustomField}
                   disabled={!newFieldLabel.trim()}
-                  className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-white/10 text-white hover:bg-white/20 disabled:opacity-40 transition-colors"
+                  className="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-indigo-600 text-white hover:bg-indigo-700 disabled:opacity-40 transition-colors"
                   title="Add custom field"
                 >
                   <Plus className="h-3.5 w-3.5" />
                 </button>
               </div>
-              <p className="mt-1.5 text-[9px] text-zinc-500">Press Enter or click + to create</p>
+              <p className="mt-1.5 text-[9px] text-zinc-400 dark:text-zinc-600">Press Enter or click + to create</p>
             </div>
-
-            {/* Selected Field Settings */}
-            {selectedFieldId && (
-              <div className="pt-4 border-t border-white/5">
-                <div className="flex justify-between items-center mb-2">
-                  <h3 className="text-[10px] font-bold uppercase tracking-wider text-zinc-500">
-                    Text Settings
-                  </h3>
-                  <button 
-                    onClick={() => setSelectedFieldId(null)}
-                    className="text-zinc-500 hover:text-zinc-300"
-                  >
-                    <X className="h-3 w-3" />
-                  </button>
-                </div>
-                <div className="flex flex-col gap-2">
-                  <label className="text-[11px] font-medium text-zinc-300 flex justify-between">
-                    <span>Font Size</span>
-                    <span>{placedFields.find(f => f.id === selectedFieldId)?.fontSize || 10}px</span>
-                  </label>
-                  <input
-                    type="range"
-                    min="6"
-                    max="48"
-                    value={placedFields.find(f => f.id === selectedFieldId)?.fontSize || 10}
-                    onChange={(e) => {
-                      const newSize = Number(e.target.value);
-                      setPlacedFields(prev => prev.map(f => f.id === selectedFieldId ? { ...f, fontSize: newSize } : f));
-                    }}
-                    className="w-full accent-white"
-                  />
-                </div>
-              </div>
-            )}
           </div>
 
+          {/* Text Settings */}
+          {selectedFieldId && (
+            <div className="pt-4 border-t border-zinc-100 dark:border-zinc-800/80 mb-6">
+              <div className="flex justify-between items-center mb-4">
+                <h3 className="text-[10px] font-bold uppercase tracking-wider text-zinc-400 dark:text-zinc-500">
+                  Text Settings
+                </h3>
+                <button
+                  onClick={() => setSelectedFieldId(null)}
+                  className="text-zinc-400 hover:text-zinc-600 dark:text-zinc-500 dark:hover:text-zinc-300"
+                >
+                  <X className="h-3 w-3" />
+                </button>
+              </div>
+              <div className="flex flex-col gap-2">
+                <label className="text-[11px] font-medium text-zinc-700 dark:text-zinc-300 flex justify-between">
+                  <span>Font Size</span>
+                  <span>{placedFields.find(f => f.id === selectedFieldId)?.fontSize || 10}px</span>
+                </label>
+                <input
+                  type="range"
+                  min="6"
+                  max="48"
+                  value={placedFields.find(f => f.id === selectedFieldId)?.fontSize || 10}
+                  onChange={(e) => {
+                    const newSize = Number(e.target.value);
+                    setPlacedFields(prev => prev.map(f => f.id === selectedFieldId ? { ...f, fontSize: newSize } : f));
+                  }}
+                  className="w-full accent-indigo-500"
+                />
+              </div>
+            </div>
+          )}
+
           {/* Quick Help Tip */}
-          <div className="rounded-lg bg-white/5 border border-white/5 p-4 text-[10px] text-zinc-400 leading-relaxed">
-            <div className="flex gap-1.5 items-center font-bold text-zinc-200 mb-1.5">
+          <div className="rounded-xl bg-zinc-50 border border-zinc-200 p-4 text-[10px] text-zinc-500 leading-relaxed dark:bg-zinc-900/30 dark:border-zinc-900 dark:text-zinc-400">
+            <div className="flex gap-1.5 items-center font-bold text-zinc-700 dark:text-zinc-300 mb-1.5">
               <HelpCircle className="h-3.5 w-3.5" />
               <span>Canvas Guide</span>
             </div>
-            1. Click tags to add them.<br/>
-            2. Hold & drag variables to place them over text slots.<br/>
-            3. Select a field and use <strong className="text-white">Arrow Keys</strong> to nudge. Hold <strong className="text-white">Shift</strong> for larger jumps.<br/>
+            1. Click tags to add them.<br />
+            2. Hold & drag variables to place them over text slots.<br />
+            3. Select a field and use <b>Arrow Keys</b> to nudge. Hold <b>Shift</b> for larger jumps.
           </div>
         </aside>
 
         {/* Center: PDF Canvas workspace */}
-        <div 
-          className={`order-1 lg:order-2 flex-1 overflow-y-auto overflow-x-auto flex flex-col items-center py-4 sm:py-8 px-2 sm:px-4 bg-zinc-950 transition-all ${
-            isFullscreen ? "fixed inset-0 z-50 !py-6" : "relative"
-          }`}
-          style={{ backgroundImage: "radial-gradient(rgba(255,255,255,0.1) 1px, transparent 1px)", backgroundSize: "24px 24px" }}
-        >
-          
+        <div className={`order-1 lg:order-2 flex-1 overflow-y-auto flex flex-col items-center py-4 sm:py-8 px-2 sm:px-4 transition-all ${isFullscreen ? "fixed inset-0 z-50 bg-zinc-950 !py-6" : "relative"
+          }`}>
+
+          {/* PDF Page Navigation & View Controls */}
+          {(numPages > 1 || isFullscreen || true) && (
+            <div className={`mb-4 items-center justify-center gap-2 sm:gap-4 px-4 py-2 ${numPages > 1 ? "flex" : "flex sm:hidden"} ${isFullscreen ? "bg-zinc-900/80 border border-white/10 backdrop-blur shadow-sm rounded-lg" : "bg-white/80 border border-zinc-200 rounded-xl backdrop-blur shadow-sm dark:border-zinc-900 dark:bg-zinc-900/80"
+              }`}>
+              {numPages > 1 && (
+                <>
+                  <button
+                    onClick={() => handlePageChange(currentPage - 1)}
+                    disabled={currentPage === 1}
+                    className={`p-1 transition-colors ${isFullscreen ? "text-zinc-400 hover:text-white" : "text-zinc-500 hover:text-zinc-900"} disabled:opacity-30`}
+                  >
+                    <ChevronLeft className="h-4 w-4" />
+                  </button>
+                  <span className={`text-xs font-bold ${isFullscreen ? "text-zinc-300" : "text-zinc-700 dark:text-zinc-300"}`}>
+                    Page {currentPage} of {numPages}
+                  </span>
+                  <button
+                    onClick={() => handlePageChange(currentPage + 1)}
+                    disabled={currentPage === numPages}
+                    className={`p-1 transition-colors ${isFullscreen ? "text-zinc-400 hover:text-white" : "text-zinc-500 hover:text-zinc-900"} disabled:opacity-30`}
+                  >
+                    <ChevronRight className="h-4 w-4" />
+                  </button>
+                  <div className={`w-px h-4 hidden sm:block ${isFullscreen ? "bg-white/10" : "bg-zinc-300 dark:bg-zinc-700"}`}></div>
+                </>
+              )}
+
+              <div className="flex items-center sm:hidden">
+                <button
+                  onClick={toggleFullscreen}
+                  className="p-1.5 flex items-center gap-2 rounded bg-indigo-500/10 border border-indigo-500/20 text-indigo-400 hover:bg-indigo-500/20 transition-colors"
+                  title={isFullscreen ? "Exit Fullscreen" : "Enter Fullscreen"}
+                >
+                  {isFullscreen ? <Minimize2 className="h-3.5 w-3.5" /> : <Maximize2 className="h-3.5 w-3.5" />}
+                  <span className="text-[10px] font-bold tracking-wider uppercase">
+                    {isFullscreen ? "Exit" : "Enlarge"}
+                  </span>
+                </button>
+              </div>
+            </div>
+          )}
+
           {/* Contextual Floating Font Size Editor (Fullscreen) */}
           {selectedFieldId && isFullscreen && (
             <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-[60] w-72 rounded-xl border border-white/10 bg-zinc-900/90 backdrop-blur-xl p-4 shadow-2xl">
@@ -710,11 +693,11 @@ export default function EditorClient({ template }: EditorClientProps) {
                 <h3 className="text-[10px] font-bold uppercase tracking-wider text-zinc-400">
                   Text Settings
                 </h3>
-                <button 
+                <button
                   onClick={() => setSelectedFieldId(null)}
-                  className="text-zinc-500 hover:text-zinc-300"
+                  className="text-zinc-500 hover:text-zinc-300 transition-colors"
                 >
-                  <X className="h-3 w-3" />
+                  <X className="h-4 w-4" />
                 </button>
               </div>
               <div className="flex flex-col gap-2">
@@ -736,55 +719,14 @@ export default function EditorClient({ template }: EditorClientProps) {
               </div>
             </div>
           )}
-          
-          {/* PDF Page Navigation & View Controls */}
-          <div className="mb-4 flex flex-wrap items-center justify-center gap-2 sm:gap-4 bg-zinc-900/80 border border-white/10 px-4 py-2 rounded-lg backdrop-blur shadow-sm">
-            {numPages > 1 && (
-              <>
-                <div className="flex items-center gap-2 sm:gap-4">
-                  <button
-                    onClick={() => handlePageChange(currentPage - 1)}
-                    disabled={currentPage === 1}
-                    className="p-1 text-zinc-500 hover:text-white disabled:opacity-30 transition-colors"
-                  >
-                    <ChevronLeft className="h-4 w-4" />
-                  </button>
-                  <span className="text-xs font-bold text-zinc-300">
-                    Page {currentPage} of {numPages}
-                  </span>
-                  <button
-                    onClick={() => handlePageChange(currentPage + 1)}
-                    disabled={currentPage === numPages}
-                    className="p-1 text-zinc-500 hover:text-white disabled:opacity-30 transition-colors"
-                  >
-                    <ChevronRight className="h-4 w-4" />
-                  </button>
-                </div>
-                <div className="w-px h-4 bg-white/10 hidden sm:block"></div>
-              </>
-            )}
-
-            <div className="flex items-center">
-              <button
-                onClick={toggleFullscreen}
-                className="p-1.5 flex items-center gap-2 rounded bg-indigo-500/10 border border-indigo-500/20 text-indigo-400 hover:bg-indigo-500/20 transition-colors"
-                title={isFullscreen ? "Exit Fullscreen" : "Enter Fullscreen"}
-              >
-                {isFullscreen ? <Minimize2 className="h-3.5 w-3.5" /> : <Maximize2 className="h-3.5 w-3.5" />}
-                <span className="text-[10px] font-bold tracking-wider uppercase">
-                  {isFullscreen ? "Exit" : "Enlarge"}
-                </span>
-              </button>
-            </div>
-          </div>
 
           {/* Canvas Wrapper */}
-          <div className="relative shadow-2xl border border-white/10 bg-white rounded-none overflow-hidden">
-            
+          <div className="relative shadow-xl border border-zinc-200 bg-white rounded-xl overflow-hidden dark:border-zinc-900">
+
             {/* Loading Indicator */}
             {pdfLoading && (
-              <div className="absolute inset-0 z-10 flex flex-col items-center justify-center bg-white/95 text-zinc-500">
-                <Loader2 className="h-8 w-8 animate-spin text-zinc-900" />
+              <div className="absolute inset-0 z-10 flex flex-col items-center justify-center bg-white/95 dark:bg-zinc-950/95 text-zinc-500">
+                <Loader2 className="h-8 w-8 animate-spin text-zinc-900 dark:text-zinc-50" />
                 <p className="mt-3 text-xs font-semibold">Loading quotation PDF pages...</p>
               </div>
             )}
@@ -802,7 +744,7 @@ export default function EditorClient({ template }: EditorClientProps) {
                 <p className="mt-1 text-xs text-zinc-500 max-w-xs">
                   Could not parse this PDF file. Verify file permissions or path. Using default layout grid workspace.
                 </p>
-                
+
                 {/* Fallback visual border to align variables in fallback mode */}
                 <div className="absolute inset-0 bg-[radial-gradient(#e5e7eb_1px,transparent_1px)] [background-size:16px_16px] pointer-events-none opacity-50"></div>
               </div>
@@ -810,7 +752,7 @@ export default function EditorClient({ template }: EditorClientProps) {
 
             {/* HTML Coordinate Mapping Overlay Container */}
             {!pdfLoading && (
-              <div 
+              <div
                 ref={containerRef}
                 className="absolute inset-0 bg-transparent select-none cursor-default overflow-hidden"
               >
@@ -833,11 +775,10 @@ export default function EditorClient({ template }: EditorClientProps) {
                       setSelectedFieldId(field.id);
                       handleTouchStart(e, field.id, field.x, field.y);
                     }}
-                    className={`flex items-end gap-1 px-1 py-0.5 border-b shadow-none cursor-grab active:cursor-grabbing group whitespace-nowrap transition-colors ${
-                      selectedFieldId === field.id
+                    className={`flex items-end gap-1 px-1 py-0.5 border-b shadow-none cursor-grab active:cursor-grabbing group whitespace-nowrap transition-colors ${selectedFieldId === field.id
                         ? "border-blue-500 bg-blue-50/80 text-blue-900 z-10"
                         : "border-zinc-400 border-dashed text-zinc-800 hover:border-zinc-900 z-0"
-                    }`}
+                      }`}
                   >
                     {field.id === "company_logo" ? (
                       <span className="font-bold opacity-80">[Logo: {field.label}]</span>
@@ -846,7 +787,7 @@ export default function EditorClient({ template }: EditorClientProps) {
                     ) : (
                       <span className="font-medium">{field.label}</span>
                     )}
-                    
+
                     {/* Remove button */}
                     <button
                       onClick={(e) => {
@@ -854,9 +795,8 @@ export default function EditorClient({ template }: EditorClientProps) {
                         removeField(field.id);
                         if (selectedFieldId === field.id) setSelectedFieldId(null);
                       }}
-                      className={`ml-1 flex h-[1.2em] w-[1.2em] shrink-0 items-center justify-center rounded-full bg-red-100 text-red-600 hover:bg-red-200 transition-colors ${
-                        selectedFieldId === field.id ? "opacity-100" : "opacity-0 group-hover:opacity-100"
-                      }`}
+                      className={`ml-1 flex h-[1.2em] w-[1.2em] shrink-0 items-center justify-center rounded-full bg-red-100 text-red-600 hover:bg-red-200 transition-colors ${selectedFieldId === field.id ? "opacity-100" : "opacity-0 group-hover:opacity-100"
+                        }`}
                     >
                       <X className="h-3 w-3" />
                     </button>
