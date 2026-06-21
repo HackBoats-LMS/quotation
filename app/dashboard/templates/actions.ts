@@ -57,16 +57,18 @@ export async function uploadTemplate(formData: FormData) {
 
     // Setup local storage directory
     const uploadDir = path.join(process.cwd(), "public", "uploads", "templates");
-    await fs.mkdir(uploadDir, { recursive: true });
-
-    // Build unique filename
     const safeName = name.trim().replace(/[^a-zA-Z0-9]/g, "_").toLowerCase();
     const filename = `${Date.now()}_${safeName}.pdf`;
     const filepath = path.join(uploadDir, filename);
-
-    // Save PDF file to filesystem
-    await fs.writeFile(filepath, buffer);
     const pdfPath = `/uploads/templates/${filename}`;
+
+    try {
+      await fs.mkdir(uploadDir, { recursive: true });
+      // Save PDF file to filesystem
+      await fs.writeFile(filepath, buffer);
+    } catch (fsErr) {
+      console.warn("Could not save PDF template to filesystem (likely read-only environment like Vercel).", fsErr);
+    }
 
     // Save metadata to database
     const { error } = await supabase
