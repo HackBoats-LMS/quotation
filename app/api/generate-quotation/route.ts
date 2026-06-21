@@ -24,7 +24,9 @@ interface QuotationData {
   notes: string;
   taxRate: number;
   customFieldValues?: Record<string, string>;
-  liveMappings?: Record<string, { page: number; x: number; y: number }>;
+  companyLogo?: string;
+  logoScale?: number;
+  liveMappings?: Record<string, { page: number; x: number; y: number; fontSize?: number }>;
 }
 
 export async function POST(req: NextRequest) {
@@ -63,7 +65,7 @@ export async function POST(req: NextRequest) {
         : (template.mappings || {});
 
     // Remove internal metadata keys before processing
-    const mappings: Record<string, { page: number; x: number; y: number }> =
+    const mappings: Record<string, { page: number; x: number; y: number; fontSize?: number }> =
       Object.fromEntries(
         Object.entries(rawMappings).filter(([key]) => !key.startsWith("_"))
       );
@@ -84,6 +86,21 @@ export async function POST(req: NextRequest) {
     const pdfDoc = await PDFDocument.load(pdfBytes);
     const font = await pdfDoc.embedFont(StandardFonts.Helvetica);
     const fontBold = await pdfDoc.embedFont(StandardFonts.HelveticaBold);
+
+    let logoImage: any = null;
+    if (body.companyLogo) {
+      try {
+        const base64Data = body.companyLogo.split(",")[1];
+        const imageBytes = Buffer.from(base64Data, "base64");
+        if (body.companyLogo.startsWith("data:image/png")) {
+          logoImage = await pdfDoc.embedPng(imageBytes);
+        } else if (body.companyLogo.startsWith("data:image/jpeg") || body.companyLogo.startsWith("data:image/jpg")) {
+          logoImage = await pdfDoc.embedJpg(imageBytes);
+        }
+      } catch (err) {
+        console.error("Failed to embed logo", err);
+      }
+    }
 
     const pages = pdfDoc.getPages();
 
@@ -109,10 +126,9 @@ export async function POST(req: NextRequest) {
     ) {
       const x = (xPct / 100) * pageWidth;
       // yPct is top-down (0% = top); PDF origin is bottom-left.
-      // Subtract FONT_SIZE so the baseline aligns with where the chip top is.
-      const topFromBottom = pageHeight - (yPct / 100) * pageHeight;
-      // Move down by chip padding so text appears inside the chip, not above it
-      const y = topFromBottom - CHIP_TOP_PADDING_PT - CHIP_FONT_SIZE;
+      // Since the UI chip has translateY(-100%), the yPct coordinate is exactly the BOTTOM edge of the chip.
+      // We map this bottom edge directly to the PDF text baseline.
+      const y = pageHeight - (yPct / 100) * pageHeight;
       return { x, y };
     }
 
@@ -154,6 +170,36 @@ export async function POST(req: NextRequest) {
       // Skip item table (handled separately) and any internal metadata keys
       if (fieldId === "item_table" || fieldId.startsWith("_")) continue;
 
+      if (fieldId === "company_logo") {
+        if (logoImage) {
+          const pageIndex = (mapping.page || 1) - 1;
+          if (pageIndex >= pages.length) continue;
+          const page = pages[pageIndex];
+          const { width, height } = page.getSize();
+          
+          const { x, y } = coordsToPdfPoints(mapping.x, mapping.y, width, height);
+          
+          // Use a baseline height of 50, modified by the user's slider
+          const baseHeight = 50;
+          const userScale = (body.logoScale || 100) / 100;
+          const targetHeight = baseHeight * userScale;
+          const imgDims = logoImage.scaleToFit(900, targetHeight);
+          
+          // Center the logo vertically around the visual center of the text placeholder
+          // so that scaling the logo expands it evenly up and down, preventing visual shift.
+          const fontSize = mapping.fontSize || 10;
+          const textCenterY = y + (fontSize / 2);
+          
+          page.drawImage(logoImage, {
+            x,
+            y: textCenterY - (imgDims.height / 2),
+            width: imgDims.width,
+            height: imgDims.height,
+          });
+        }
+        continue;
+      }
+
       const value = fieldValues[fieldId];
       if (!value) continue;
 
@@ -163,6 +209,8 @@ export async function POST(req: NextRequest) {
       const { width, height } = page.getSize();
 
       const { x, y } = coordsToPdfPoints(mapping.x, mapping.y, width, height);
+      
+      const size = mapping.fontSize || 10;
 
       // Multi-line support for address
       if (fieldId === "customer_address") {
@@ -170,8 +218,8 @@ export async function POST(req: NextRequest) {
         lines.forEach((line, i) => {
           page.drawText(line.trim(), {
             x,
-            y: y - i * (FONT_SIZE + 3),
-            size: FONT_SIZE,
+            y: y - i * (size + 3),
+            size: size,
             font,
             color: textColor,
           });
@@ -180,7 +228,7 @@ export async function POST(req: NextRequest) {
         page.drawText(value, {
           x,
           y,
-          size: FONT_SIZE,
+          size: size,
           font,
           color: textColor,
         });

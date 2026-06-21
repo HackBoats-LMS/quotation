@@ -6,17 +6,22 @@ import path from "path";
 import { supabase } from "@/lib/supabase";
 import { getLoggedInOwnerEmail, getBusinessProfile } from "@/app/auth/actions";
 
-export async function getTemplates() {
-  const email = await getLoggedInOwnerEmail();
-  if (!email) throw new Error("Unauthorized");
+export async function getTemplates(businessId?: string) {
+  let finalBusinessId = businessId;
 
-  const business = await getBusinessProfile(email);
-  if (!business) return [];
+  if (!finalBusinessId) {
+    const email = await getLoggedInOwnerEmail();
+    if (!email) throw new Error("Unauthorized");
+
+    const business = await getBusinessProfile(email);
+    if (!business) return [];
+    finalBusinessId = business.id;
+  }
 
   const { data, error } = await supabase
     .from("quotation_templates")
     .select("*")
-    .eq("business_id", business.id)
+    .eq("business_id", finalBusinessId)
     .order("created_at", { ascending: false });
 
   if (error) {
@@ -134,18 +139,22 @@ export async function deleteTemplate(id: string) {
   }
 }
 
-export async function getTemplateById(id: string) {
-  const email = await getLoggedInOwnerEmail();
-  if (!email) throw new Error("Unauthorized");
+export async function getTemplateById(id: string, businessId?: string) {
+  let finalBusinessId = businessId;
 
-  const business = await getBusinessProfile(email);
-  if (!business) throw new Error("Business profile not found");
+  if (!finalBusinessId) {
+    const email = await getLoggedInOwnerEmail();
+    if (!email) throw new Error("Unauthorized");
+    const business = await getBusinessProfile(email);
+    if (!business) throw new Error("Business profile not found");
+    finalBusinessId = business.id;
+  }
 
   const { data, error } = await supabase
     .from("quotation_templates")
     .select("*")
     .eq("id", id)
-    .eq("business_id", business.id)
+    .eq("business_id", finalBusinessId)
     .maybeSingle();
 
   if (error) {

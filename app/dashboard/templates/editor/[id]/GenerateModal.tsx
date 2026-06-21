@@ -71,6 +71,18 @@ export default function GenerateModal({
   const [lineItems, setLineItems] = useState<LineItem[]>([defaultItem()]);
   const [isGenerating, setIsGenerating] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [logoBase64, setLogoBase64] = useState<string | null>(null);
+  const [logoScale, setLogoScale] = useState<number>(100);
+
+  const handleLogoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      setLogoBase64(event.target?.result as string);
+    };
+    reader.readAsDataURL(file);
+  };
 
   // Derived totals
   const subtotal = lineItems.reduce(
@@ -139,6 +151,8 @@ export default function GenerateModal({
           taxRate: Number(item.taxRate),
         })),
         customFieldValues: customValues,
+        companyLogo: logoBase64,
+        logoScale: logoScale,
         // Pass current live field positions from the editor so the API
         // always uses the latest placements, even without a DB save
         liveMappings,
@@ -295,6 +309,38 @@ export default function GenerateModal({
             </div>
           )}
 
+          {/* Logo Upload Section - only shown if company_logo is mapped */}
+          {liveMappings.company_logo && (
+            <div>
+              <h3 className="text-xs font-bold uppercase tracking-wider text-zinc-400 dark:text-zinc-500 mb-3">
+                Company Logo
+              </h3>
+              <input
+                type="file"
+                accept="image/png, image/jpeg"
+                onChange={handleLogoUpload}
+                className={INPUT_CLASS}
+              />
+              {logoBase64 && (
+                <div className="mt-3">
+                  <div className="flex justify-between items-center mb-1.5">
+                    <label className={LABEL_CLASS}>Logo Size</label>
+                    <span className="text-[10px] font-bold text-zinc-700 dark:text-zinc-300">{logoScale}%</span>
+                  </div>
+                  <input
+                    type="range"
+                    min="20"
+                    max="300"
+                    value={logoScale}
+                    onChange={(e) => setLogoScale(Number(e.target.value))}
+                    className="w-full accent-zinc-900 dark:accent-zinc-50"
+                  />
+                  <p className="mt-1 text-[10px] text-zinc-500">Adjust the slider to scale your logo in the generated PDF.</p>
+                </div>
+              )}
+            </div>
+          )}
+
           {/* Line Items Section */}
           <div>
             <div className="flex items-center justify-between mb-3">
@@ -310,92 +356,94 @@ export default function GenerateModal({
               </button>
             </div>
 
-            <div className="rounded-xl border border-zinc-200 dark:border-zinc-800 overflow-hidden">
-              {/* Column headers */}
-              <div className="grid grid-cols-[2fr_3fr_60px_100px_70px_32px] gap-px bg-zinc-100 dark:bg-zinc-800 text-[10px] font-semibold uppercase tracking-wider text-zinc-500 dark:text-zinc-400">
-                <div className="bg-zinc-50 dark:bg-zinc-900 px-3 py-2">Item</div>
-                <div className="bg-zinc-50 dark:bg-zinc-900 px-3 py-2">Description</div>
-                <div className="bg-zinc-50 dark:bg-zinc-900 px-3 py-2">Qty</div>
-                <div className="bg-zinc-50 dark:bg-zinc-900 px-3 py-2">Unit Price</div>
-                <div className="bg-zinc-50 dark:bg-zinc-900 px-3 py-2">Tax %</div>
-                <div className="bg-zinc-50 dark:bg-zinc-900 px-1 py-2"></div>
-              </div>
+            <div className="rounded-xl border border-zinc-200 dark:border-zinc-800 overflow-x-auto">
+              <div className="min-w-[640px]">
+                {/* Column headers */}
+                <div className="grid grid-cols-[2fr_3fr_60px_100px_70px_32px] gap-px bg-zinc-100 dark:bg-zinc-800 text-[10px] font-semibold uppercase tracking-wider text-zinc-500 dark:text-zinc-400">
+                  <div className="bg-zinc-50 dark:bg-zinc-900 px-3 py-2">Item</div>
+                  <div className="bg-zinc-50 dark:bg-zinc-900 px-3 py-2">Description</div>
+                  <div className="bg-zinc-50 dark:bg-zinc-900 px-3 py-2">Qty</div>
+                  <div className="bg-zinc-50 dark:bg-zinc-900 px-3 py-2">Unit Price</div>
+                  <div className="bg-zinc-50 dark:bg-zinc-900 px-3 py-2">Tax %</div>
+                  <div className="bg-zinc-50 dark:bg-zinc-900 px-1 py-2"></div>
+                </div>
 
-              {/* Rows */}
-              <div className="divide-y divide-zinc-100 dark:divide-zinc-800">
-                {lineItems.map((item, idx) => (
-                  <div
-                    key={idx}
-                    className="grid grid-cols-[2fr_3fr_60px_100px_70px_32px] gap-px bg-zinc-100 dark:bg-zinc-800"
-                  >
-                    <input
-                      value={item.item}
-                      onChange={(e) => handleItemChange(idx, "item", e.target.value)}
-                      placeholder="Item name"
-                      className="bg-white dark:bg-zinc-950 px-3 py-2.5 text-sm text-zinc-900 dark:text-zinc-50 placeholder-zinc-400 dark:placeholder-zinc-600 focus:outline-none focus:bg-blue-50 dark:focus:bg-zinc-900"
-                    />
-                    <input
-                      value={item.description}
-                      onChange={(e) =>
-                        handleItemChange(idx, "description", e.target.value)
-                      }
-                      placeholder="Description"
-                      className="bg-white dark:bg-zinc-950 px-3 py-2.5 text-sm text-zinc-900 dark:text-zinc-50 placeholder-zinc-400 dark:placeholder-zinc-600 focus:outline-none focus:bg-blue-50 dark:focus:bg-zinc-900"
-                    />
-                    <input
-                      type="number"
-                      min={1}
-                      value={item.qty}
-                      onChange={(e) =>
-                        handleItemChange(idx, "qty", parseFloat(e.target.value) || 0)
-                      }
-                      className="bg-white dark:bg-zinc-950 px-3 py-2.5 text-sm text-zinc-900 dark:text-zinc-50 focus:outline-none focus:bg-blue-50 dark:focus:bg-zinc-900"
-                    />
-                    <input
-                      type="number"
-                      min={0}
-                      step="0.01"
-                      value={item.unitPrice}
-                      onChange={(e) =>
-                        handleItemChange(
-                          idx,
-                          "unitPrice",
-                          parseFloat(e.target.value) || 0
-                        )
-                      }
-                      className="bg-white dark:bg-zinc-950 px-3 py-2.5 text-sm text-zinc-900 dark:text-zinc-50 focus:outline-none focus:bg-blue-50 dark:focus:bg-zinc-900"
-                    />
-                    <input
-                      type="number"
-                      min={0}
-                      max={100}
-                      step="0.5"
-                      value={item.taxRate}
-                      onChange={(e) =>
-                        handleItemChange(
-                          idx,
-                          "taxRate",
-                          parseFloat(e.target.value) || 0
-                        )
-                      }
-                      className="bg-white dark:bg-zinc-950 px-3 py-2.5 text-sm text-zinc-900 dark:text-zinc-50 focus:outline-none focus:bg-blue-50 dark:focus:bg-zinc-900"
-                    />
-                    <button
-                      onClick={() => removeItem(idx)}
-                      disabled={lineItems.length === 1}
-                      className="flex items-center justify-center bg-white dark:bg-zinc-950 text-zinc-400 hover:text-red-500 disabled:opacity-30 transition-colors"
+                {/* Rows */}
+                <div className="divide-y divide-zinc-100 dark:divide-zinc-800">
+                  {lineItems.map((item, idx) => (
+                    <div
+                      key={idx}
+                      className="grid grid-cols-[2fr_3fr_60px_100px_70px_32px] gap-px bg-zinc-100 dark:bg-zinc-800"
                     >
-                      <Trash2 className="h-3.5 w-3.5" />
-                    </button>
-                  </div>
-                ))}
+                      <input
+                        value={item.item}
+                        onChange={(e) => handleItemChange(idx, "item", e.target.value)}
+                        placeholder="Item name"
+                        className="min-w-0 bg-white dark:bg-zinc-950 px-3 py-2.5 text-sm text-zinc-900 dark:text-zinc-50 placeholder-zinc-400 dark:placeholder-zinc-600 focus:outline-none focus:bg-blue-50 dark:focus:bg-zinc-900"
+                      />
+                      <input
+                        value={item.description}
+                        onChange={(e) =>
+                          handleItemChange(idx, "description", e.target.value)
+                        }
+                        placeholder="Description"
+                        className="min-w-0 bg-white dark:bg-zinc-950 px-3 py-2.5 text-sm text-zinc-900 dark:text-zinc-50 placeholder-zinc-400 dark:placeholder-zinc-600 focus:outline-none focus:bg-blue-50 dark:focus:bg-zinc-900"
+                      />
+                      <input
+                        type="number"
+                        min={1}
+                        value={item.qty}
+                        onChange={(e) =>
+                          handleItemChange(idx, "qty", parseFloat(e.target.value) || 0)
+                        }
+                        className="min-w-0 bg-white dark:bg-zinc-950 px-3 py-2.5 text-sm text-zinc-900 dark:text-zinc-50 focus:outline-none focus:bg-blue-50 dark:focus:bg-zinc-900"
+                      />
+                      <input
+                        type="number"
+                        min={0}
+                        step="0.01"
+                        value={item.unitPrice}
+                        onChange={(e) =>
+                          handleItemChange(
+                            idx,
+                            "unitPrice",
+                            parseFloat(e.target.value) || 0
+                          )
+                        }
+                        className="min-w-0 bg-white dark:bg-zinc-950 px-3 py-2.5 text-sm text-zinc-900 dark:text-zinc-50 focus:outline-none focus:bg-blue-50 dark:focus:bg-zinc-900"
+                      />
+                      <input
+                        type="number"
+                        min={0}
+                        max={100}
+                        step="0.5"
+                        value={item.taxRate}
+                        onChange={(e) =>
+                          handleItemChange(
+                            idx,
+                            "taxRate",
+                            parseFloat(e.target.value) || 0
+                          )
+                        }
+                        className="min-w-0 bg-white dark:bg-zinc-950 px-3 py-2.5 text-sm text-zinc-900 dark:text-zinc-50 focus:outline-none focus:bg-blue-50 dark:focus:bg-zinc-900"
+                      />
+                      <button
+                        onClick={() => removeItem(idx)}
+                        disabled={lineItems.length === 1}
+                        className="flex items-center justify-center bg-white dark:bg-zinc-950 text-zinc-400 hover:text-red-500 disabled:opacity-30 transition-colors"
+                      >
+                        <Trash2 className="h-3.5 w-3.5" />
+                      </button>
+                    </div>
+                  ))}
+                </div>
               </div>
             </div>
           </div>
 
           {/* Notes + Totals */}
-          <div className="flex items-start justify-between gap-6">
-            <div className="flex-1">
+          <div className="flex flex-col sm:flex-row items-start justify-between gap-6">
+            <div className="w-full sm:flex-1">
               <label className={LABEL_CLASS}>Notes</label>
               <textarea
                 name="notes"
@@ -407,7 +455,7 @@ export default function GenerateModal({
               />
             </div>
 
-            <div className="w-56 space-y-2 rounded-xl border border-zinc-200 bg-zinc-50 p-4 dark:border-zinc-800 dark:bg-zinc-900/30">
+            <div className="w-full sm:w-64 space-y-2 rounded-xl border border-zinc-200 bg-zinc-50 p-4 dark:border-zinc-800 dark:bg-zinc-900/30">
               <div className="flex items-center justify-between text-xs">
                 <span className="text-zinc-500 dark:text-zinc-400">Subtotal</span>
                 <span className="font-semibold text-zinc-900 dark:text-zinc-50">

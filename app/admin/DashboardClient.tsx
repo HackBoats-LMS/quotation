@@ -11,10 +11,11 @@ import {
   Calendar, 
   Users, 
   ShieldCheck, 
-  Loader2, 
+  Loader2,
   AlertCircle, 
   CheckCircle2 
 } from "lucide-react";
+import MidnightSky from "@/components/MidnightSky";
 
 interface InvitedUser {
   id: string;
@@ -120,33 +121,32 @@ export default function DashboardClient({ initialUsers }: DashboardClientProps) 
   };
 
   return (
-    <div className="min-h-screen bg-zinc-50 dark:bg-zinc-950">
-      {/* Top Navbar */}
-      <header className="sticky top-0 z-30 border-b border-zinc-200 bg-white/80 backdrop-blur-md dark:border-zinc-800 dark:bg-zinc-900/80">
-        <div className="mx-auto flex max-w-6xl items-center justify-between px-4 py-4 sm:px-6 lg:px-8">
-          <div className="flex items-center gap-3">
-            <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-zinc-900 text-zinc-50 dark:bg-zinc-50 dark:text-zinc-950">
-              <ShieldCheck className="h-5 w-5" />
-            </div>
-            <div>
-              <h1 className="text-md font-bold text-zinc-900 dark:text-zinc-50 sm:text-lg">
-                Quotation Control Center
-              </h1>
-              <p className="hidden text-xs text-zinc-500 dark:text-zinc-400 sm:block">
-                Admin Console
-              </p>
-            </div>
+    <div className="min-h-screen relative font-sans text-zinc-50 bg-zinc-950 selection:bg-indigo-500/30 overflow-x-hidden">
+      <MidnightSky />
+      <div className="relative z-10 flex flex-col min-h-screen">
+      
+      {/* Navigation Header */}
+      <header className="fixed top-6 inset-x-0 z-50 flex justify-center px-4 pointer-events-none">
+        <div className="flex w-full max-w-5xl items-center justify-between sm:rounded-full sm:border sm:border-white/10 sm:bg-white/5 sm:px-4 sm:py-3 sm:backdrop-blur-xl sm:shadow-2xl pointer-events-auto">
+          <div className="flex items-center gap-3 px-2">
+            <ShieldCheck className="h-6 w-6 text-white shrink-0" />
+            <span className="text-base font-bold tracking-wide text-white hidden sm:block">
+              Quotation Control Center
+            </span>
+            <span className="text-base font-bold tracking-wide text-white sm:hidden">
+              Control Center
+            </span>
           </div>
           
           <button
             onClick={handleLogout}
             disabled={isPendingLogout}
-            className="flex items-center gap-2 rounded-lg border border-zinc-200 bg-white px-3 py-2 text-xs font-semibold text-zinc-700 transition-colors hover:bg-zinc-50 hover:text-zinc-950 disabled:opacity-50 dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-300 dark:hover:bg-zinc-850 dark:hover:text-zinc-50"
+            className="flex items-center gap-2 rounded-full border border-white/10 bg-transparent px-4 py-2 text-sm font-semibold text-zinc-300 transition-colors hover:bg-white/10 hover:text-white"
           >
             {isPendingLogout ? (
-              <Loader2 className="h-3.5 w-3.5 animate-spin" />
+              <Loader2 className="h-4 w-4 animate-spin" />
             ) : (
-              <LogOut className="h-3.5 w-3.5" />
+              <LogOut className="h-4 w-4" />
             )}
             Sign Out
           </button>
@@ -154,17 +154,17 @@ export default function DashboardClient({ initialUsers }: DashboardClientProps) 
       </header>
 
       {/* Main Content */}
-      <main className="mx-auto max-w-6xl px-4 py-8 sm:px-6 lg:px-8">
+      <main className="mx-auto w-full max-w-5xl px-4 sm:px-8 pt-28 pb-32 sm:pt-32 sm:pb-16 flex-1">
         {/* Error/Success Banner */}
         <div className="space-y-3 mb-6">
           {error && (
-            <div className="flex items-center gap-2 rounded-xl bg-red-50 p-4 text-sm font-medium text-red-700 dark:bg-red-950/20 dark:text-red-400">
+            <div className="flex items-center gap-2 rounded-xl bg-red-500/10 border border-red-500/20 p-4 text-sm font-medium text-red-400">
               <AlertCircle className="h-5 w-5 shrink-0" />
               <span>{error}</span>
             </div>
           )}
           {success && (
-            <div className="flex items-center gap-2 rounded-xl bg-emerald-50 p-4 text-sm font-medium text-emerald-700 dark:bg-emerald-950/20 dark:text-emerald-400">
+            <div className="flex items-center gap-2 rounded-xl bg-emerald-500/10 border border-emerald-500/20 p-4 text-sm font-medium text-emerald-400">
               <CheckCircle2 className="h-5 w-5 shrink-0" />
               <span>{success}</span>
             </div>
@@ -175,12 +175,14 @@ export default function DashboardClient({ initialUsers }: DashboardClientProps) 
         <div className="grid gap-8 lg:grid-cols-3">
           
           {/* Left Column: Invite Form */}
-          <div className="space-y-6 lg:col-span-1">
-            <div className="rounded-2xl border border-zinc-200/80 bg-white p-6 shadow-sm dark:border-zinc-800/80 dark:bg-zinc-900/50">
-              <h2 className="text-md font-bold text-zinc-900 dark:text-zinc-50">
+          <div className="space-y-6 lg:col-span-1 min-w-0">
+            <div className="rounded-3xl border border-white/10 bg-white/5 p-6 sm:p-8 shadow-2xl backdrop-blur-xl relative overflow-hidden group hover:border-white/20 transition-all">
+              <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-white/10 to-transparent"></div>
+              
+              <h2 className="text-lg font-bold text-white">
                 Grant Access
               </h2>
-              <p className="mt-1 text-xs text-zinc-500 dark:text-zinc-400">
+              <p className="mt-1 text-xs text-zinc-400">
                 Authorize a new business owner by entering their email address.
               </p>
 
@@ -188,12 +190,12 @@ export default function DashboardClient({ initialUsers }: DashboardClientProps) 
                 <div>
                   <label
                     htmlFor="email"
-                    className="block text-xs font-semibold uppercase tracking-wider text-zinc-500 dark:text-zinc-400"
+                    className="block text-xs font-bold uppercase tracking-widest text-zinc-400"
                   >
                     Business Owner Email
                   </label>
                   <div className="relative mt-2">
-                    <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3 text-zinc-400">
+                    <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3 text-zinc-500">
                       <Mail className="h-4 w-4" />
                     </div>
                     <input
@@ -203,7 +205,7 @@ export default function DashboardClient({ initialUsers }: DashboardClientProps) 
                       value={emailInput}
                       onChange={(e) => setEmailInput(e.target.value)}
                       placeholder="name@company.com"
-                      className="block w-full rounded-xl border border-zinc-200 bg-zinc-50/50 py-2.5 pl-10 pr-4 text-sm text-zinc-900 placeholder-zinc-400 transition-colors focus:border-zinc-900 focus:bg-white focus:outline-none focus:ring-1 focus:ring-zinc-900 dark:border-zinc-800 dark:bg-zinc-950/50 dark:text-zinc-50 dark:placeholder-zinc-600 dark:focus:border-zinc-50 dark:focus:bg-zinc-950 dark:focus:ring-zinc-50"
+                      className="block w-full rounded-xl border border-white/10 bg-black/40 py-3 pl-10 pr-4 text-sm text-white placeholder-zinc-500 transition-colors focus:border-indigo-500 focus:bg-black focus:outline-none focus:ring-1 focus:ring-indigo-500"
                       disabled={isPendingInvite}
                     />
                   </div>
@@ -212,7 +214,7 @@ export default function DashboardClient({ initialUsers }: DashboardClientProps) 
                 <button
                   type="submit"
                   disabled={isPendingInvite || !emailInput}
-                  className="flex w-full items-center justify-center gap-2 rounded-xl bg-zinc-900 py-2.5 text-sm font-semibold text-white transition-all hover:bg-zinc-800 focus:outline-none focus:ring-2 focus:ring-zinc-950 focus:ring-offset-2 disabled:bg-zinc-200 disabled:text-zinc-400 dark:bg-zinc-50 dark:text-zinc-950 dark:hover:bg-zinc-200 dark:focus:ring-zinc-300 dark:focus:ring-offset-zinc-950 dark:disabled:bg-zinc-800 dark:disabled:text-zinc-500"
+                  className="flex w-full items-center justify-center gap-2 rounded-xl bg-white py-3 text-sm font-bold text-black shadow-[0_0_15px_rgba(255,255,255,0.2)] transition-all hover:scale-105 hover:shadow-[0_0_25px_rgba(255,255,255,0.4)] disabled:opacity-50 disabled:scale-100"
                 >
                   {isPendingInvite ? (
                     <>
@@ -230,16 +232,16 @@ export default function DashboardClient({ initialUsers }: DashboardClientProps) 
             </div>
 
             {/* Quick Metrics */}
-            <div className="rounded-2xl border border-zinc-200/80 bg-white p-6 shadow-sm dark:border-zinc-800/80 dark:bg-zinc-900/50">
-              <div className="flex items-center gap-3">
-                <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-zinc-100 text-zinc-950 dark:bg-zinc-800 dark:text-zinc-50">
-                  <Users className="h-5 w-5" />
+            <div className="rounded-3xl border border-white/10 bg-white/5 p-6 sm:p-8 shadow-2xl backdrop-blur-xl relative overflow-hidden group hover:border-white/20 transition-all">
+              <div className="flex items-center gap-4">
+                <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-white/10 text-white border border-white/10">
+                  <Users className="h-6 w-6" />
                 </div>
                 <div>
-                  <p className="text-xs font-medium text-zinc-500 dark:text-zinc-400">
+                  <p className="text-xs font-bold uppercase tracking-widest text-zinc-400">
                     Active Access Grants
                   </p>
-                  <p className="text-xl font-bold text-zinc-900 dark:text-zinc-50">
+                  <p className="text-2xl font-bold text-white mt-1">
                     {users.length}
                   </p>
                 </div>
@@ -248,69 +250,69 @@ export default function DashboardClient({ initialUsers }: DashboardClientProps) 
           </div>
 
           {/* Right Column: List of Invited Users */}
-          <div className="lg:col-span-2">
-            <div className="rounded-2xl border border-zinc-200/80 bg-white shadow-sm dark:border-zinc-800/80 dark:bg-zinc-900/50 overflow-hidden">
-              <div className="px-6 py-5 border-b border-zinc-200 dark:border-zinc-800">
-                <h2 className="text-md font-bold text-zinc-900 dark:text-zinc-50">
+          <div className="lg:col-span-2 min-w-0">
+            <div className="rounded-3xl border border-white/10 bg-white/5 shadow-2xl backdrop-blur-xl relative overflow-hidden group hover:border-white/20 transition-all h-full">
+              <div className="px-6 sm:px-8 py-6 border-b border-white/10">
+                <h2 className="text-lg font-bold text-white">
                   Authorized Businesses
                 </h2>
-                <p className="mt-1 text-xs text-zinc-500 dark:text-zinc-400">
+                <p className="mt-1 text-xs text-zinc-400">
                   A list of business owners currently authorized to use the platform.
                 </p>
               </div>
 
               {users.length === 0 ? (
-                <div className="flex flex-col items-center justify-center py-16 text-center">
-                  <Mail className="h-10 w-10 text-zinc-300 dark:text-zinc-700" />
-                  <p className="mt-4 text-sm font-semibold text-zinc-950 dark:text-zinc-50">
+                <div className="flex flex-col items-center justify-center py-20 text-center px-4">
+                  <Mail className="h-12 w-12 text-white/20" />
+                  <p className="mt-4 text-sm font-bold text-white">
                     No active invitations
                   </p>
-                  <p className="mt-1 text-xs text-zinc-500 dark:text-zinc-400">
-                    Grant access on the left to authorize business owners.
+                  <p className="mt-2 text-xs text-zinc-400 max-w-xs">
+                    Grant access on the left to authorize business owners to access the dashboard.
                   </p>
                 </div>
               ) : (
-                <div className="overflow-x-auto">
-                  <table className="w-full border-collapse text-left text-sm text-zinc-500 dark:text-zinc-400">
+                <div className="w-full overflow-x-auto scrollbar-hide sm:overflow-x-visible">
+                  <table className="w-full border-collapse text-left text-sm text-zinc-400 whitespace-nowrap sm:whitespace-normal">
                     <thead>
-                      <tr className="border-b border-zinc-200 bg-zinc-50/50 text-xs font-semibold uppercase tracking-wider text-zinc-500 dark:border-zinc-800 dark:bg-zinc-950/20 dark:text-zinc-400">
-                        <th scope="col" className="px-6 py-3.5">
+                      <tr className="border-b border-white/10 bg-white/5 text-[10px] font-bold uppercase tracking-widest text-zinc-500">
+                        <th scope="col" className="px-6 sm:px-8 py-4">
                           Email Address
                         </th>
-                        <th scope="col" className="px-6 py-3.5">
+                        <th scope="col" className="px-6 sm:px-8 py-4">
                           Date Added
                         </th>
-                        <th scope="col" className="px-6 py-3.5 text-right">
+                        <th scope="col" className="px-6 sm:px-8 py-4 text-right">
                           Actions
                         </th>
                       </tr>
                     </thead>
-                    <tbody className="divide-y divide-zinc-200 dark:divide-zinc-800">
+                    <tbody className="divide-y divide-white/10">
                       {users.map((user) => (
                         <tr 
                           key={user.id} 
-                          className="hover:bg-zinc-50/50 transition-colors dark:hover:bg-zinc-950/10"
+                          className="hover:bg-white/[0.02] transition-colors"
                         >
-                          <td className="px-6 py-4 font-medium text-zinc-900 dark:text-zinc-100">
-                            <span className="flex items-center gap-2">
-                              <span className="h-1.5 w-1.5 rounded-full bg-emerald-500"></span>
+                          <td className="px-8 py-5 font-medium text-white">
+                            <span className="flex items-center gap-3">
+                              <span className="h-2 w-2 rounded-full bg-emerald-500 shadow-[0_0_10px_rgba(16,185,129,0.5)]"></span>
                               {user.email}
                             </span>
                           </td>
-                          <td className="px-6 py-4">
-                            <span className="flex items-center gap-1.5 text-xs text-zinc-500 dark:text-zinc-400">
-                              <Calendar className="h-3.5 w-3.5" />
+                          <td className="px-8 py-5">
+                            <span className="flex items-center gap-2 text-xs text-zinc-400">
+                              <Calendar className="h-4 w-4 text-zinc-500" />
                               {formatDate(user.created_at)}
                             </span>
                           </td>
-                          <td className="px-6 py-4 text-right">
+                          <td className="px-8 py-5 text-right">
                             <button
                               onClick={() => handleRevoke(user.id, user.email)}
                               disabled={revokingId === user.id}
-                              className="inline-flex items-center gap-1 rounded-lg px-2.5 py-1.5 text-xs font-semibold text-red-600 transition-colors hover:bg-red-50 disabled:opacity-50 dark:text-red-400 dark:hover:bg-red-950/20"
+                              className="inline-flex items-center gap-1.5 rounded-lg border border-red-500/20 bg-red-500/10 px-3 py-2 text-xs font-bold text-red-400 transition-colors hover:bg-red-500/20 disabled:opacity-50"
                             >
                               {revokingId === user.id ? (
-                                <Loader2 className="h-3 w-3 animate-spin" />
+                                <Loader2 className="h-3.5 w-3.5 animate-spin" />
                               ) : (
                                 <Trash2 className="h-3.5 w-3.5" />
                               )}
@@ -328,6 +330,7 @@ export default function DashboardClient({ initialUsers }: DashboardClientProps) 
 
         </div>
       </main>
+      </div>
     </div>
   );
 }
