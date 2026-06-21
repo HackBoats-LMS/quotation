@@ -22,7 +22,7 @@ export default async function TemplatesPage() {
   // Fetch templates for the current business
   let templates = [];
   try {
-    templates = await getTemplates();
+    templates = await getTemplates(business.id);
   } catch (e) {
     console.error("Failed to load templates (it might be that the database table is not created yet):", e);
   }

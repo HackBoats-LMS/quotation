@@ -3,6 +3,7 @@
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
+import MidnightSky from "@/components/MidnightSky";
 import { logoutOwner } from "@/app/auth/actions";
 import { uploadTemplate, deleteTemplate } from "./actions";
 import { 
@@ -18,7 +19,9 @@ import {
   Edit3,
   Upload,
   ArrowRight,
-  FolderOpen
+  FolderOpen,
+  Atom,
+  LayoutDashboard
 } from "lucide-react";
 
 interface TemplateItem {
@@ -135,68 +138,85 @@ export default function TemplatesClient({
   };
 
   return (
-    <div className="min-h-screen bg-zinc-50 dark:bg-zinc-950 font-sans text-zinc-900 dark:text-zinc-550">
-      
-      {/* Top Navbar */}
-      <header className="sticky top-0 z-30 border-b border-zinc-200 bg-white/80 backdrop-blur-md dark:border-zinc-900 dark:bg-zinc-950/80">
-        <div className="mx-auto flex max-w-5xl items-center justify-between px-4 py-4 sm:px-6 lg:px-8">
-          
-          {/* Brand & Navigation */}
-          <div className="flex items-center gap-8">
-            <div className="flex items-center gap-2.5">
-              <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-zinc-900 text-zinc-50 dark:bg-zinc-50 dark:text-zinc-950">
-                <Layers className="h-5 w-5" />
+    <div className="min-h-screen relative font-sans text-zinc-50 bg-zinc-950 selection:bg-indigo-500/30">
+      <MidnightSky />
+
+      {/* Mobile Bottom Navigation Dock */}
+      <nav className="sm:hidden fixed bottom-6 inset-x-6 z-50 flex items-center justify-between rounded-full border border-white/10 bg-black/60 backdrop-blur-2xl shadow-2xl px-8 py-4">
+        <Link href="/dashboard" className="flex flex-col items-center gap-1.5 text-zinc-500 hover:text-white transition-colors">
+          <LayoutDashboard className="h-5 w-5" />
+          <span className="text-[9px] font-bold tracking-widest uppercase">Dash</span>
+        </Link>
+        <Link href="/dashboard/templates" className="flex flex-col items-center gap-1.5 text-white">
+          <FileText className="h-5 w-5" />
+          <span className="text-[9px] font-bold tracking-widest uppercase">Templates</span>
+        </Link>
+        <button onClick={handleLogout} className="flex flex-col items-center gap-1.5 text-red-400">
+          <LogOut className="h-5 w-5" />
+          <span className="text-[9px] font-bold tracking-widest uppercase">Exit</span>
+        </button>
+      </nav>
+
+      {/* Content wrapper */}
+      <div className="relative z-10 flex flex-col min-h-screen">
+        
+        {/* Premium Floating Navbar */}
+        <header className="absolute sm:sticky top-6 z-30 mx-4 sm:mx-8 lg:mx-auto lg:w-full lg:max-w-5xl sm:rounded-full sm:border sm:border-white/10 sm:bg-black/40 sm:backdrop-blur-2xl sm:shadow-2xl">
+          <div className="flex items-center justify-between sm:px-8 sm:py-3 pt-2">
+            
+            <div className="flex items-center gap-10">
+              <div className="flex items-center gap-2.5">
+                <Atom className="h-6 w-6 text-white" />
+                <span className="text-base font-medium tracking-wide text-white drop-shadow-sm">
+                  Quotation Tool
+                </span>
               </div>
-              <span className="text-md font-bold tracking-tight text-zinc-900 dark:text-zinc-50">
-                Q-Tool
-              </span>
+
+              {/* Navigation links */}
+              <nav className="hidden sm:flex items-center gap-6 text-sm font-medium mt-1">
+                <Link 
+                  href="/dashboard" 
+                  className="text-zinc-400 hover:text-white transition-colors border-b-2 border-transparent pb-1"
+                >
+                  Dashboard
+                </Link>
+                <Link 
+                  href="/dashboard/templates" 
+                  className="text-white drop-shadow-sm border-b-2 border-indigo-500 pb-1"
+                >
+                  Templates
+                </Link>
+              </nav>
             </div>
-
-            {/* Navigation links */}
-            <nav className="flex gap-4 text-xs font-semibold">
-              <Link 
-                href="/dashboard" 
-                className="text-zinc-500 hover:text-zinc-900 dark:text-zinc-400 dark:hover:text-zinc-50 transition-colors"
-              >
-                Dashboard
-              </Link>
-              <Link 
-                href="/dashboard/templates" 
-                className="text-zinc-950 dark:text-zinc-50 border-b border-zinc-900 dark:border-zinc-50 pb-0.5"
-              >
-                Templates
-              </Link>
-            </nav>
+            
+            <button
+              onClick={handleLogout}
+              disabled={isPendingLogout}
+              className="hidden sm:flex items-center gap-2 rounded-full border border-white/10 bg-white/5 px-5 py-2 text-sm font-medium text-zinc-300 transition-all hover:bg-white/10 hover:text-white disabled:opacity-50"
+            >
+              <LogOut className="h-4 w-4" />
+              Sign Out
+            </button>
           </div>
-          
-          <button
-            onClick={handleLogout}
-            disabled={isPendingLogout}
-            className="flex items-center gap-2 rounded-xl border border-zinc-200 bg-white px-3 py-2 text-xs font-semibold text-zinc-600 transition-colors hover:bg-zinc-50 hover:text-zinc-950 disabled:opacity-50 dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-300 dark:hover:bg-zinc-800 dark:hover:text-zinc-50"
-          >
-            <LogOut className="h-3.5 w-3.5" />
-            Sign Out
-          </button>
-        </div>
-      </header>
+        </header>
 
-      {/* Main Container */}
-      <main className="mx-auto max-w-5xl px-4 py-10 sm:px-6 lg:px-8">
+        {/* Main Templates Content */}
+        <main className="mx-auto w-full max-w-5xl px-4 sm:px-8 pt-28 sm:pt-32 pb-32 sm:pb-16 flex-1">
         
         {/* Banner header */}
-        <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+        <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
           <div>
-            <h2 className="text-2xl font-bold tracking-tight text-zinc-900 dark:text-zinc-50">
+            <h2 className="text-4xl font-extrabold tracking-tight text-transparent bg-clip-text bg-gradient-to-r from-white to-white/60 drop-shadow-sm">
               Quotation Templates
             </h2>
-            <p className="text-xs text-zinc-500 dark:text-zinc-400">
+            <p className="mt-2 text-sm text-zinc-400">
               Manage your company quotation layout formats for {businessName}.
             </p>
           </div>
           
           <button
             onClick={() => setShowUploadForm(!showUploadForm)}
-            className="flex items-center gap-2 rounded-xl bg-zinc-900 px-4 py-2.5 text-xs font-semibold text-white shadow transition-all hover:bg-zinc-800 hover:shadow-md dark:bg-zinc-50 dark:text-zinc-950 dark:hover:bg-zinc-200"
+            className="flex items-center gap-2 rounded-xl bg-white px-5 py-2.5 text-sm font-bold text-black shadow-[0_0_20px_rgba(255,255,255,0.2)] transition-all hover:scale-105 hover:shadow-[0_0_30px_rgba(255,255,255,0.4)]"
           >
             <Plus className="h-4 w-4" />
             Upload PDF Template
@@ -221,13 +241,13 @@ export default function TemplatesClient({
 
         {/* Conditional Upload Drawer */}
         {showUploadForm && (
-          <div className="mt-8 rounded-2xl border border-zinc-200 bg-white p-6 shadow-sm dark:border-zinc-900 dark:bg-zinc-900/40">
-            <h3 className="text-sm font-bold text-zinc-900 dark:text-zinc-50">
+          <div className="mt-12 rounded-3xl border border-white/10 bg-white/5 p-8 backdrop-blur-xl shadow-2xl transition-all">
+            <h3 className="text-lg font-bold text-white drop-shadow-sm">
               Upload New Template
             </h3>
-            <form onSubmit={handleUploadSubmit} className="mt-6 space-y-4 max-w-xl">
+            <form onSubmit={handleUploadSubmit} className="mt-6 space-y-6 max-w-xl">
               <div>
-                <label className="block text-xs font-semibold uppercase tracking-wider text-zinc-500 dark:text-zinc-400">
+                <label className="block text-xs font-bold uppercase tracking-wider text-zinc-400">
                   Template Name
                 </label>
                 <input
@@ -236,20 +256,20 @@ export default function TemplatesClient({
                   placeholder="E.g., Standard Service Invoice, Product Quotation v2"
                   value={nameInput}
                   onChange={(e) => setNameInput(e.target.value)}
-                  className="block w-full rounded-xl border border-zinc-200 bg-zinc-50/50 mt-2 py-2.5 px-4 text-sm text-zinc-900 placeholder-zinc-400 transition-colors focus:border-zinc-900 focus:bg-white focus:outline-none focus:ring-1 focus:ring-zinc-900 dark:border-zinc-800 dark:bg-zinc-950/50 dark:text-zinc-50 dark:placeholder-zinc-500 dark:focus:border-zinc-50 dark:focus:bg-zinc-950 dark:focus:ring-zinc-50"
+                  className="block w-full rounded-xl border border-white/10 bg-black/40 mt-3 py-3 px-4 text-sm text-white placeholder-zinc-500 transition-colors focus:border-indigo-500 focus:bg-black focus:outline-none focus:ring-1 focus:ring-indigo-500"
                   disabled={isPendingUpload}
                 />
               </div>
 
               <div>
-                <label className="block text-xs font-semibold uppercase tracking-wider text-zinc-500 dark:text-zinc-400">
+                <label className="block text-xs font-bold uppercase tracking-wider text-zinc-400">
                   Quotation PDF File
                 </label>
-                <div className="mt-2 flex items-center justify-center rounded-xl border border-dashed border-zinc-200 bg-zinc-50/50 px-6 py-6 dark:border-zinc-800 dark:bg-zinc-950/30">
-                  <div className="space-y-1.5 text-center">
-                    <Upload className="mx-auto h-7 w-7 text-zinc-400" />
-                    <div className="flex text-xs text-zinc-600 dark:text-zinc-400 justify-center">
-                      <label className="relative cursor-pointer rounded-md font-semibold text-zinc-950 hover:text-zinc-700 dark:text-zinc-50 dark:hover:text-zinc-300">
+                <div className="mt-3 flex items-center justify-center rounded-xl border-2 border-dashed border-white/10 bg-black/20 px-6 py-8 transition-colors hover:border-white/20 hover:bg-black/40">
+                  <div className="space-y-2 text-center">
+                    <Upload className="mx-auto h-8 w-8 text-indigo-400/80 drop-shadow-lg" />
+                    <div className="flex text-sm text-zinc-400 justify-center">
+                      <label className="relative cursor-pointer rounded-md font-bold text-white hover:text-indigo-300 transition-colors">
                         <span>Click to upload a PDF</span>
                         <input
                           id="file-input"
@@ -263,21 +283,21 @@ export default function TemplatesClient({
                       </label>
                     </div>
                     {fileInput ? (
-                      <p className="text-xs text-emerald-600 dark:text-emerald-400 font-medium">
+                      <p className="text-sm text-indigo-400 font-medium">
                         Selected: {fileInput.name} ({(fileInput.size / 1024).toFixed(1)} KB)
                       </p>
                     ) : (
-                      <p className="text-[10px] text-zinc-400">PDF documents only</p>
+                      <p className="text-xs text-zinc-500">PDF documents only (Max 5MB)</p>
                     )}
                   </div>
                 </div>
               </div>
 
-              <div className="flex items-center gap-3 pt-2">
+              <div className="flex items-center gap-4 pt-4">
                 <button
                   type="submit"
                   disabled={isPendingUpload}
-                  className="flex items-center gap-2 rounded-xl bg-zinc-900 px-5 py-2.5 text-xs font-semibold text-white transition-all hover:bg-zinc-800 disabled:opacity-50 dark:bg-zinc-50 dark:text-zinc-950 dark:hover:bg-zinc-200"
+                  className="flex items-center gap-2 rounded-xl bg-white px-6 py-3 text-sm font-bold text-black shadow-[0_0_15px_rgba(255,255,255,0.2)] transition-all hover:scale-105 hover:shadow-[0_0_25px_rgba(255,255,255,0.4)] disabled:opacity-50 disabled:scale-100"
                 >
                   {isPendingUpload ? (
                     <>
@@ -298,7 +318,7 @@ export default function TemplatesClient({
                     setShowUploadForm(false);
                     setError(null);
                   }}
-                  className="rounded-xl border border-zinc-200 bg-white px-5 py-2.5 text-xs font-semibold text-zinc-700 transition-colors hover:bg-zinc-50 dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-300 dark:hover:bg-zinc-800"
+                  className="rounded-xl border border-white/10 bg-white/5 px-6 py-3 text-sm font-bold text-zinc-300 transition-colors hover:bg-white/10 hover:text-white"
                 >
                   Cancel
                 </button>
@@ -308,13 +328,13 @@ export default function TemplatesClient({
         )}
 
         {/* Templates Grid Area */}
-        <div className="mt-8">
+        <div className="mt-12">
           {templates.length === 0 ? (
             /* Empty state */
-            <div className="rounded-2xl border border-dashed border-zinc-200 bg-white p-16 text-center dark:border-zinc-800 dark:bg-zinc-900/10">
-              <FolderOpen className="mx-auto h-10 w-10 text-zinc-300 dark:text-zinc-700" />
-              <h3 className="mt-4 text-base font-bold text-zinc-900 dark:text-zinc-50">No Templates Available</h3>
-              <p className="mx-auto mt-1 max-w-xs text-xs text-zinc-500 dark:text-zinc-400">
+            <div className="relative overflow-hidden rounded-3xl border border-dashed border-white/20 bg-black/40 backdrop-blur-xl p-16 text-center transition-all hover:border-white/30">
+              <FolderOpen className="mx-auto h-12 w-12 text-zinc-500 drop-shadow-lg" />
+              <h3 className="mt-6 text-xl font-bold text-white drop-shadow-sm">No Templates Available</h3>
+              <p className="mx-auto mt-2 max-w-sm text-sm text-zinc-400">
                 You haven't uploaded any quotation PDF layouts yet. Click upload to get started.
               </p>
             </div>
@@ -324,16 +344,24 @@ export default function TemplatesClient({
               {templates.map((template) => (
                 <div 
                   key={template.id} 
-                  className="rounded-2xl border border-zinc-200 bg-white p-5 shadow-sm dark:border-zinc-900 dark:bg-zinc-900/40 flex flex-col justify-between"
+                  className="group relative overflow-hidden rounded-[1.5rem] sm:rounded-3xl border border-white/10 bg-white/[0.02] p-5 sm:p-6 shadow-2xl transition-all hover:bg-white/[0.04] hover:border-white/20 flex flex-col justify-between"
                 >
-                  <div>
-                    <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-zinc-100 text-zinc-900 dark:bg-zinc-800 dark:text-zinc-50">
-                      <FileText className="h-5 w-5" />
+                  {/* Glass Edge Highlight */}
+                  <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-white/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
+                  
+                  {/* Animated Glow */}
+                  <div className="absolute -right-10 -top-10 h-32 w-32 rounded-full bg-indigo-500/10 blur-3xl transition-all group-hover:bg-indigo-500/20 pointer-events-none animate-pulse" style={{ animationDuration: '4s' }}></div>
+                  
+                  <div className="relative z-10">
+                    <div className="flex items-start justify-between">
+                      <div className="flex h-10 w-10 sm:h-12 sm:w-12 items-center justify-center rounded-xl sm:rounded-2xl bg-white/10 text-indigo-400 shadow-inner border border-white/5">
+                        <FileText className="h-5 w-5 sm:h-6 sm:w-6" />
+                      </div>
                     </div>
-                    <h3 className="mt-4 font-bold text-zinc-950 dark:text-zinc-50 line-clamp-1">
+                    <h3 className="mt-4 sm:mt-6 text-lg sm:text-xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-white to-white/60 tracking-tight line-clamp-1 drop-shadow-sm">
                       {template.name}
                     </h3>
-                    <p className="mt-1 text-[10px] text-zinc-400">
+                    <p className="mt-2 text-xs text-zinc-400 font-medium">
                       Uploaded on {new Date(template.created_at).toLocaleDateString("en-US", {
                         year: "numeric",
                         month: "short",
@@ -342,16 +370,16 @@ export default function TemplatesClient({
                     </p>
                   </div>
 
-                  <div className="mt-6 pt-4 border-t border-zinc-100 dark:border-zinc-800 flex flex-col gap-2">
-                    <div className="flex gap-2 justify-between">
+                  <div className="relative z-10 mt-5 sm:mt-8 pt-4 sm:pt-6 border-t border-white/10 flex flex-col gap-2 sm:gap-3">
+                    <div className="flex gap-2 sm:gap-3 justify-between">
                       {/* View PDF */}
                       <a
                         href={template.pdf_path}
                         target="_blank"
                         rel="noreferrer"
-                        className="flex-1 flex items-center justify-center gap-1 rounded-lg border border-zinc-200 py-2 text-[11px] font-semibold text-zinc-600 hover:bg-zinc-50 dark:border-zinc-800 dark:text-zinc-300 dark:hover:bg-zinc-800"
+                        className="flex-1 flex items-center justify-center gap-2 rounded-xl border border-white/10 bg-white/5 py-2 sm:py-2.5 text-[10px] sm:text-xs font-bold text-zinc-300 transition-colors hover:bg-white/10 hover:text-white"
                       >
-                        <ExternalLink className="h-3 w-3" />
+                        <ExternalLink className="h-3 sm:h-3.5 w-3 sm:w-3.5" />
                         View PDF
                       </a>
 
@@ -359,12 +387,12 @@ export default function TemplatesClient({
                       <button
                         onClick={() => handleDelete(template.id, template.name)}
                         disabled={deletingId === template.id}
-                        className="flex-1 flex items-center justify-center gap-1 rounded-lg border border-zinc-200 py-2 text-[11px] font-semibold text-red-650 hover:bg-red-50 dark:border-zinc-800 dark:text-red-400 dark:hover:bg-red-950/10"
+                        className="flex-1 flex items-center justify-center gap-2 rounded-xl border border-red-500/20 bg-red-500/5 py-2 sm:py-2.5 text-[10px] sm:text-xs font-bold text-red-400 transition-colors hover:bg-red-500/20 hover:text-red-300"
                       >
                         {deletingId === template.id ? (
-                          <Loader2 className="h-3 w-3 animate-spin" />
+                          <Loader2 className="h-3 sm:h-3.5 w-3 sm:w-3.5 animate-spin" />
                         ) : (
-                          <Trash2 className="h-3 w-3" />
+                          <Trash2 className="h-3 sm:h-3.5 w-3 sm:w-3.5" />
                         )}
                         Delete
                       </button>
@@ -373,11 +401,11 @@ export default function TemplatesClient({
                     {/* Open Editor Button */}
                     <Link
                       href={`/dashboard/templates/editor/${template.id}`}
-                      className="w-full flex items-center justify-center gap-1.5 rounded-lg bg-zinc-900 py-2 text-[11px] font-semibold text-white transition-colors hover:bg-zinc-800 dark:bg-zinc-50 dark:text-zinc-950 dark:hover:bg-zinc-200"
+                      className="w-full flex items-center justify-center gap-2 rounded-xl bg-white py-2.5 sm:py-3 text-xs sm:text-sm font-bold text-black transition-all hover:bg-zinc-200 hover:scale-[1.02] shadow-[0_0_15px_rgba(255,255,255,0.15)]"
                     >
-                      <Edit3 className="h-3 w-3" />
+                      <Edit3 className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
                       Open Editor
-                      <ArrowRight className="h-3 w-3" />
+                      <ArrowRight className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
                     </Link>
                   </div>
                 </div>
@@ -387,6 +415,7 @@ export default function TemplatesClient({
         </div>
 
       </main>
+      </div>
 
     </div>
   );

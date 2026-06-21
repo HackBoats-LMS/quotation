@@ -12,8 +12,10 @@ import {
   Upload, 
   Layers, 
   Briefcase,
-  AlertTriangle,
-  FileSpreadsheet
+  FileSpreadsheet,
+  Atom,
+  LayoutDashboard,
+  AlertTriangle
 } from "lucide-react";
 
 interface BusinessProfile {
@@ -31,6 +33,8 @@ interface DashboardClientProps {
   templateCount: number;
   quotationCount: number;
 }
+
+import MidnightSky from "@/components/MidnightSky";
 
 export default function DashboardClient({ 
   business, 
@@ -50,154 +54,182 @@ export default function DashboardClient({
   };
 
   return (
-    <div className="min-h-screen bg-zinc-50 dark:bg-zinc-950 font-sans text-zinc-900 dark:text-zinc-550">
+    <div className="min-h-screen relative font-sans text-zinc-50 bg-zinc-950 selection:bg-indigo-500/30">
+      <MidnightSky />
       
-      {/* Top Navbar */}
-      <header className="sticky top-0 z-30 border-b border-zinc-200 bg-white/80 backdrop-blur-md dark:border-zinc-900 dark:bg-zinc-950/80">
-        <div className="mx-auto flex max-w-5xl items-center justify-between px-4 py-4 sm:px-6 lg:px-8">
-          
-          <div className="flex items-center gap-8">
-            <div className="flex items-center gap-2.5">
-              <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-zinc-900 text-zinc-50 dark:bg-zinc-50 dark:text-zinc-950">
-                <Layers className="h-5 w-5" />
-              </div>
-              <span className="text-md font-bold tracking-tight text-zinc-900 dark:text-zinc-550">
-                Q-Tool
-              </span>
-            </div>
+      {/* Mobile Bottom Navigation Dock */}
+      <nav className="sm:hidden fixed bottom-6 inset-x-6 z-50 flex items-center justify-between rounded-full border border-white/10 bg-black/60 backdrop-blur-2xl shadow-2xl px-8 py-4">
+        <Link href="/dashboard" className="flex flex-col items-center gap-1.5 text-white">
+          <LayoutDashboard className="h-5 w-5" />
+          <span className="text-[9px] font-bold tracking-widest uppercase">Dash</span>
+        </Link>
+        <Link href="/dashboard/templates" className="flex flex-col items-center gap-1.5 text-zinc-500 hover:text-white transition-colors">
+          <FileText className="h-5 w-5" />
+          <span className="text-[9px] font-bold tracking-widest uppercase">Templates</span>
+        </Link>
+        <button onClick={handleLogout} className="flex flex-col items-center gap-1.5 text-red-400">
+          <LogOut className="h-5 w-5" />
+          <span className="text-[9px] font-bold tracking-widest uppercase">Exit</span>
+        </button>
+      </nav>
 
-            {/* Navigation links */}
-            <nav className="flex gap-4 text-xs font-semibold">
-              <Link 
-                href="/dashboard" 
-                className="text-zinc-950 dark:text-zinc-50 border-b border-zinc-900 dark:border-zinc-50 pb-0.5"
-              >
-                Dashboard
-              </Link>
-              <Link 
-                href="/dashboard/templates" 
-                className="text-zinc-500 hover:text-zinc-900 dark:text-zinc-400 dark:hover:text-zinc-50 transition-colors"
-              >
-                Templates
-              </Link>
-            </nav>
-          </div>
-          
-          <button
-            onClick={handleLogout}
-            disabled={isPending}
-            className="flex items-center gap-2 rounded-xl border border-zinc-200 bg-white px-3 py-2 text-xs font-semibold text-zinc-600 transition-colors hover:bg-zinc-50 hover:text-zinc-950 disabled:opacity-50 dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-300 dark:hover:bg-zinc-800 dark:hover:text-zinc-50"
-          >
-            <LogOut className="h-3.5 w-3.5" />
-            Sign Out
-          </button>
-        </div>
-      </header>
-
-      {/* Main Container */}
-      <main className="mx-auto max-w-5xl px-4 py-10 sm:px-6 lg:px-8">
+      {/* Content wrapper */}
+      <div className="relative z-10 flex flex-col min-h-screen">
         
-        {/* Welcome Section */}
-        <div className="flex flex-col gap-1 sm:flex-row sm:items-baseline sm:justify-between">
-          <div>
-            <h2 className="text-2xl font-bold tracking-tight text-zinc-900 dark:text-zinc-50">
-              Welcome, {business.name}
-            </h2>
-            <p className="text-xs text-zinc-500 dark:text-zinc-400">
-              Logged in as <span className="font-medium text-zinc-700 dark:text-zinc-300">{ownerEmail}</span>
-            </p>
-          </div>
-        </div>
-
-        {/* Metrics Grid */}
-        <div className="mt-8 grid gap-6 sm:grid-cols-2">
-          
-          {/* Card: Total Templates */}
-          <div className="rounded-2xl border border-zinc-200 bg-white p-6 shadow-sm dark:border-zinc-900 dark:bg-zinc-900/40">
-            <div className="flex items-center justify-between">
-              <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-zinc-100 text-zinc-900 dark:bg-zinc-800 dark:text-zinc-50">
-                <FileText className="h-5 w-5" />
-              </div>
-              <span className="text-xs font-medium text-zinc-400 dark:text-zinc-500">Templates</span>
-            </div>
-            <div className="mt-4">
-              <p className="text-3xl font-extrabold text-zinc-900 dark:text-zinc-50">{templateCount}</p>
-              <p className="mt-1 text-xs text-zinc-500 dark:text-zinc-400">Total Templates Uploaded</p>
-            </div>
-          </div>
-
-          {/* Card: Total Quotations */}
-          <div className="rounded-2xl border border-zinc-200 bg-white p-6 shadow-sm dark:border-zinc-900 dark:bg-zinc-900/40">
-            <div className="flex items-center justify-between">
-              <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-zinc-100 text-zinc-900 dark:bg-zinc-800 dark:text-zinc-50">
-                <FileSpreadsheet className="h-5 w-5" />
-              </div>
-              <span className="text-xs font-medium text-zinc-400 dark:text-zinc-500">Quotations</span>
-            </div>
-            <div className="mt-4">
-              <p className="text-3xl font-extrabold text-zinc-900 dark:text-zinc-50">{quotationCount}</p>
-              <p className="mt-1 text-xs text-zinc-500 dark:text-zinc-400">Total Quotations Generated</p>
-            </div>
-          </div>
-
-        </div>
-
-        {/* Dynamic Display Area */}
-        <div className="mt-8">
-          
-          {templateCount === 0 ? (
+        {/* Premium Floating Navbar */}
+        <header className="absolute sm:sticky top-6 z-30 mx-4 sm:mx-8 lg:mx-auto lg:w-full lg:max-w-5xl sm:rounded-full sm:border sm:border-white/10 sm:bg-black/40 sm:backdrop-blur-2xl sm:shadow-2xl">
+          <div className="flex items-center justify-between sm:px-8 sm:py-3 pt-2">
             
-            /* Empty State: No template exists */
-            <div className="rounded-2xl border border-dashed border-zinc-200 bg-white p-12 text-center shadow-sm dark:border-zinc-800 dark:bg-zinc-900/10">
-              <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-amber-50 text-amber-500 dark:bg-amber-950/20 dark:text-amber-400">
-                <AlertTriangle className="h-6 w-6" />
+            <div className="flex items-center gap-10">
+              <div className="flex items-center gap-2.5">
+                <Atom className="h-6 w-6 text-white" />
+                <span className="text-base font-medium tracking-wide text-white drop-shadow-sm">
+                  Quotation Tool
+                </span>
               </div>
-              <h3 className="mt-4 text-base font-bold text-zinc-900 dark:text-zinc-50">
-                Quotation Template Required
-              </h3>
-              <p className="mx-auto mt-2 max-w-sm text-xs leading-relaxed text-zinc-500 dark:text-zinc-400">
-                You must upload a quotation template before you can start generating quotations.
+
+              {/* Navigation links */}
+              <nav className="hidden sm:flex items-center gap-6 text-sm font-medium mt-1">
+                <Link 
+                  href="/dashboard" 
+                  className="text-white drop-shadow-sm border-b-2 border-indigo-500 pb-1"
+                >
+                  Dashboard
+                </Link>
+                <Link 
+                  href="/dashboard/templates" 
+                  className="text-zinc-400 hover:text-white transition-colors border-b-2 border-transparent pb-1"
+                >
+                  Templates
+                </Link>
+              </nav>
+            </div>
+            
+            <button
+              onClick={handleLogout}
+              disabled={isPending}
+              className="hidden sm:flex items-center gap-2 rounded-full border border-white/10 bg-white/5 px-5 py-2 text-sm font-medium text-zinc-300 transition-all hover:bg-white/10 hover:text-white disabled:opacity-50"
+            >
+              <LogOut className="h-4 w-4" />
+              Sign Out
+            </button>
+          </div>
+        </header>
+
+        {/* Main Dashboard Content */}
+        <main className="mx-auto w-full max-w-5xl px-4 sm:px-8 pt-28 sm:pt-32 pb-32 sm:pb-16 flex-1">
+          
+          {/* Welcome Section */}
+          <div className="flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between mb-12">
+            <div>
+              <h2 className="text-4xl font-extrabold tracking-tight text-transparent bg-clip-text bg-gradient-to-r from-white to-white/60 drop-shadow-sm">
+                Welcome, {business.name}
+              </h2>
+              <p className="mt-2 text-sm text-zinc-400">
+                Logged in as <span className="font-medium text-zinc-300">{ownerEmail}</span>
               </p>
-              <div className="mt-6 flex justify-center">
-                <Link 
-                  href="/dashboard/templates"
-                  className="flex items-center gap-2 rounded-xl bg-zinc-900 px-5 py-2.5 text-xs font-semibold text-white shadow transition-all hover:bg-zinc-800 hover:shadow-md dark:bg-zinc-50 dark:text-zinc-950 dark:hover:bg-zinc-200"
-                >
-                  <Upload className="h-4 w-4" />
-                  Upload Quotation Template
-                </Link>
-              </div>
             </div>
+          </div>
 
-          ) : (
-
-            /* Normal State: List of templates/quotations can be rendered here later */
-            <div className="rounded-2xl border border-zinc-200 bg-white p-6 shadow-sm dark:border-zinc-900 dark:bg-zinc-900/50">
-              <div className="flex items-center justify-between">
-                <div>
-                  <h3 className="text-sm font-bold text-zinc-900 dark:text-zinc-50">Active Workspace</h3>
-                  <p className="text-[10px] text-zinc-500 mt-0.5">Template initialized and ready</p>
+          {/* Metrics Grid */}
+          <div className="grid gap-6 sm:grid-cols-2">
+            
+            {/* Card: Total Templates */}
+            <div className="group relative overflow-hidden rounded-[2rem] sm:rounded-3xl border border-white/10 bg-white/[0.02] p-6 sm:p-8 shadow-2xl transition-all hover:bg-white/[0.04] hover:border-white/20">
+              {/* Glass Edge Highlight */}
+              <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-white/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
+              
+              <div className="absolute -right-10 -top-10 h-40 w-40 rounded-full bg-indigo-500/10 blur-3xl transition-all group-hover:bg-indigo-500/20 animate-pulse" style={{ animationDuration: '4s' }}></div>
+              <div className="relative z-10 flex items-center justify-between">
+                <div className="flex h-10 w-10 sm:h-12 sm:w-12 items-center justify-center rounded-xl sm:rounded-2xl bg-white/10 text-indigo-400 shadow-inner border border-white/5">
+                  <FileText className="h-5 w-5 sm:h-6 sm:w-6" />
                 </div>
-                <Link 
-                  href="/dashboard/templates"
-                  className="flex items-center gap-1.5 rounded-lg bg-zinc-900 px-3 py-2 text-xs font-semibold text-white transition-colors hover:bg-zinc-800 dark:bg-zinc-50 dark:text-zinc-950 dark:hover:bg-zinc-200"
-                >
-                  <Upload className="h-3.5 w-3.5" />
-                  Upload Template
-                </Link>
+                <span className="text-[10px] sm:text-xs font-bold tracking-widest text-zinc-500 uppercase">Templates</span>
               </div>
-              <div className="mt-6 border-t border-zinc-100 pt-6 dark:border-zinc-800">
-                <p className="text-xs text-zinc-600 dark:text-zinc-400 leading-relaxed">
-                  Your business profile is fully configured. Start mapping quotation variables or configure custom fields.
-                </p>
+              <div className="relative z-10 mt-6 sm:mt-8">
+                <p className="text-5xl sm:text-6xl font-black text-transparent bg-clip-text bg-gradient-to-b from-white to-white/30 drop-shadow-sm">{templateCount}</p>
+                <p className="mt-1 sm:mt-2 text-xs sm:text-sm text-zinc-400">Total Templates Uploaded</p>
               </div>
             </div>
 
-          )}
+            {/* Card: Total Quotations */}
+            <div className="group relative overflow-hidden rounded-[2rem] sm:rounded-3xl border border-white/10 bg-white/[0.02] p-6 sm:p-8 shadow-2xl transition-all hover:bg-white/[0.04] hover:border-white/20">
+              {/* Glass Edge Highlight */}
+              <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-purple-500/30 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
+              
+              <div className="absolute -right-10 -top-10 h-40 w-40 rounded-full bg-purple-500/10 blur-3xl transition-all group-hover:bg-purple-500/20 animate-pulse" style={{ animationDuration: '5s' }}></div>
+              <div className="relative z-10 flex items-center justify-between">
+                <div className="flex h-10 w-10 sm:h-12 sm:w-12 items-center justify-center rounded-xl sm:rounded-2xl bg-white/10 text-purple-400 shadow-inner border border-white/5">
+                  <FileSpreadsheet className="h-5 w-5 sm:h-6 sm:w-6" />
+                </div>
+                <span className="text-[10px] sm:text-xs font-bold tracking-widest text-zinc-500 uppercase">Quotations</span>
+              </div>
+              <div className="relative z-10 mt-6 sm:mt-8">
+                <p className="text-5xl sm:text-6xl font-black text-transparent bg-clip-text bg-gradient-to-b from-white to-white/30 drop-shadow-sm">{quotationCount}</p>
+                <p className="mt-1 sm:mt-2 text-xs sm:text-sm text-zinc-400">Total Quotations Generated</p>
+              </div>
+            </div>
 
-        </div>
+          </div>
 
-      </main>
+          {/* Dynamic Display Area */}
+          <div className="mt-8">
+            
+            {templateCount === 0 ? (
+              
+              /* Empty State */
+              <div className="relative overflow-hidden rounded-3xl border border-dashed border-white/20 bg-black/40 backdrop-blur-xl p-16 text-center transition-all hover:border-white/30">
+                <div className="absolute inset-0 bg-gradient-to-b from-amber-500/5 to-transparent"></div>
+                <div className="relative z-10 mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-amber-500/20 text-amber-400 border border-amber-500/30 shadow-[0_0_30px_rgba(245,158,11,0.2)]">
+                  <AlertTriangle className="h-8 w-8" />
+                </div>
+                <h3 className="relative z-10 mt-6 text-xl font-bold text-white drop-shadow-sm">
+                  Quotation Template Required
+                </h3>
+                <p className="relative z-10 mx-auto mt-3 max-w-md text-sm leading-relaxed text-zinc-400">
+                  Your workspace is ready, but you need to upload a base PDF template before you can start automating quotations.
+                </p>
+                <div className="relative z-10 mt-8 flex justify-center">
+                  <Link 
+                    href="/dashboard/templates"
+                    className="flex items-center gap-2 rounded-xl bg-white px-6 py-3 text-sm font-bold text-black shadow-[0_0_20px_rgba(255,255,255,0.3)] transition-all hover:scale-105 hover:shadow-[0_0_30px_rgba(255,255,255,0.5)]"
+                  >
+                    <Upload className="h-4 w-4" />
+                    Upload PDF Template
+                  </Link>
+                </div>
+              </div>
+
+            ) : (
+
+              /* Normal State */
+              <div className="rounded-3xl border border-white/10 bg-white/5 p-8 backdrop-blur-xl shadow-2xl">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <h3 className="text-lg font-bold text-white drop-shadow-sm">Active Workspace</h3>
+                    <p className="text-sm text-zinc-400 mt-1">Your system is initialized and ready</p>
+                  </div>
+                  <Link 
+                    href="/dashboard/templates"
+                    className="flex items-center gap-2 rounded-xl bg-white px-5 py-2.5 text-sm font-bold text-black transition-all hover:bg-zinc-200 hover:scale-105"
+                  >
+                    <Upload className="h-4 w-4" />
+                    Upload Template
+                  </Link>
+                </div>
+                <div className="mt-8 border-t border-white/10 pt-8">
+                  <p className="text-sm text-zinc-400 leading-relaxed">
+                    Your business profile is fully configured. Navigate to Templates to map variables, configure custom fields, and generate automated quotes.
+                  </p>
+                </div>
+              </div>
+
+            )}
+
+          </div>
+
+        </main>
+      </div>
     </div>
   );
 }

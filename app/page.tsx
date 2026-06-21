@@ -1,4 +1,6 @@
 import Link from "next/link";
+import MidnightSky from "../components/MidnightSky";
+import CardDeck from "../components/CardDeck";
 import { 
   FileUp, 
   Map, 
@@ -11,7 +13,8 @@ import {
   LayoutDashboard,
   Coins,
   Shield,
-  Layers
+  Layers,
+  Atom
 } from "lucide-react";
 
 export const metadata = {
@@ -19,34 +22,62 @@ export const metadata = {
   description: "Automate quotation generation while maintaining your exact brand design and PDF layout.",
 };
 
+const FEATURES = [
+  {
+    icon: <Layers className="h-5 w-5" />,
+    title: "Preserve Existing Layouts",
+    desc: "Keep the precise look, logo positioning, and styling details of your current client documents."
+  },
+  {
+    icon: <Users className="h-5 w-5" />,
+    title: "Customer Management",
+    desc: "Maintain client details and default address presets for lightning-fast quotation inputs."
+  },
+  {
+    icon: <Briefcase className="h-5 w-5" />,
+    title: "Quotation Archiving",
+    desc: "Store, filter, and track status records for all generated quotes inside an organized dashboard."
+  },
+  {
+    icon: <FileText className="h-5 w-5" />,
+    title: "Professional PDF Engine",
+    desc: "Generate high-quality vector printouts dynamically using server-side overlays."
+  },
+  {
+    icon: <Zap className="h-5 w-5" />,
+    title: "Rapid Creation",
+    desc: "Standardize table entry and automatic subtotal math for rapid multi-item creations."
+  }
+];
+
 export default function Home() {
   return (
-    <div className="min-h-screen bg-zinc-50 font-sans text-zinc-900 dark:bg-zinc-950 dark:text-zinc-50 selection:bg-zinc-900 selection:text-white dark:selection:bg-white dark:selection:text-black">
-      
+    <div className="relative min-h-screen font-sans text-zinc-900 dark:text-zinc-50 overflow-x-hidden selection:bg-zinc-900 selection:text-white dark:selection:bg-white dark:selection:text-black">
+      <div className="fixed inset-0 z-[-1] bg-zinc-950">
+        <MidnightSky />
+      </div>
       {/* Navigation Header */}
-      <header className="sticky top-0 z-50 border-b border-zinc-200/80 bg-white/80 backdrop-blur-md dark:border-zinc-900/80 dark:bg-zinc-950/80">
-        <div className="mx-auto flex max-w-6xl items-center justify-between px-4 py-4 sm:px-6 lg:px-8">
-          <div className="flex items-center gap-2.5">
-            <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-zinc-900 text-zinc-50 dark:bg-zinc-50 dark:text-zinc-950">
-              <Layers className="h-5 w-5" />
-            </div>
-            <span className="text-lg font-bold tracking-tight text-zinc-900 dark:text-zinc-50">
-              Q-Tool
+      <header className="fixed top-10 sm:top-12 inset-x-0 z-50 flex justify-center px-4">
+        <div className="flex w-full max-w-3xl items-center justify-between rounded-full border border-white/10 bg-zinc-950/80 p-2 sm:p-2.5 backdrop-blur-xl shadow-2xl">
+          <div className="flex items-center gap-2.5 pl-3 sm:pl-4">
+            <Atom className="h-5 w-5 sm:h-6 sm:w-6 text-white" />
+            <span className="text-sm sm:text-base font-semibold tracking-wide text-white">
+              Quotation Tool
             </span>
           </div>
 
           <Link
             href="/login"
-            className="flex items-center gap-1.5 rounded-xl bg-zinc-900 px-4 py-2 text-xs font-semibold text-white transition-all hover:bg-zinc-800 focus:outline-none focus:ring-2 focus:ring-zinc-950 dark:bg-zinc-50 dark:text-zinc-950 dark:hover:bg-zinc-200"
+            className="rounded-full bg-white px-6 sm:px-8 py-2.5 sm:py-3 text-[13px] sm:text-sm font-bold text-black transition-all hover:bg-zinc-200 focus:outline-none focus:ring-2 focus:ring-white/50"
           >
-            <LayoutDashboard className="h-3.5 w-3.5" />
-            Dashboard Login
+            <span className="hidden sm:inline">Dashboard Login</span>
+            <span className="sm:hidden">Login</span>
           </Link>
         </div>
       </header>
 
       {/* Hero Section */}
-      <section className="relative overflow-hidden px-4 py-20 sm:px-6 lg:px-8 lg:py-32">
+      <section className="relative flex min-h-screen items-center justify-center overflow-hidden px-4 py-20 sm:px-6 lg:px-8 lg:py-32">
         {/* Glow Effects */}
         <div className="absolute top-0 left-1/4 -z-10 h-72 w-72 rounded-full bg-zinc-200/50 blur-3xl dark:bg-zinc-900/20"></div>
         <div className="absolute bottom-0 right-1/4 -z-10 h-80 w-80 rounded-full bg-zinc-300/30 blur-3xl dark:bg-zinc-800/10"></div>
@@ -57,14 +88,14 @@ export default function Home() {
             Enterprise Quotation Platform
           </div>
 
-          <h1 className="mt-8 text-4xl font-extrabold tracking-tight text-zinc-900 dark:text-zinc-50 sm:text-5xl lg:text-6xl">
+          <h1 className="mt-8 text-3xl font-extrabold tracking-tight text-zinc-900 dark:text-zinc-50 sm:text-5xl lg:text-6xl">
             Automate Quotation Generation.{" "}
-            <span className="bg-gradient-to-r from-zinc-600 via-zinc-800 to-zinc-950 bg-clip-text text-transparent dark:from-zinc-400 dark:via-zinc-200 dark:to-zinc-50">
+            <span className="bg-gradient-to-r from-zinc-600 via-zinc-800 to-zinc-950 bg-clip-text text-transparent dark:from-zinc-400 dark:via-zinc-200 dark:to-zinc-50 block sm:inline mt-1 sm:mt-0">
               Keep Your Exact Design.
             </span>
           </h1>
 
-          <p className="mt-6 text-lg leading-8 text-zinc-600 dark:text-zinc-400">
+          <p className="mt-6 text-sm sm:text-lg leading-7 sm:leading-8 text-zinc-600 dark:text-zinc-400">
             Ditch manual template adjustments. Upload your existing business quotation PDFs, visually map your fields, and automate quote generation with zero design trade-offs.
           </p>
 
@@ -156,71 +187,40 @@ export default function Home() {
             </p>
           </div>
 
-          <div className="mx-auto mt-16 grid max-w-5xl grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
-            {/* Feature 1 */}
-            <div className="flex flex-col rounded-2xl border border-zinc-200 bg-white p-6 shadow-sm dark:border-zinc-800/80 dark:bg-zinc-900/40">
-              <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-zinc-100 text-zinc-900 dark:bg-zinc-800 dark:text-zinc-50">
-                <Layers className="h-5 w-5" />
+          {/* Desktop Grid */}
+          <div className="hidden sm:grid mx-auto mt-16 max-w-5xl grid-cols-2 lg:grid-cols-3 gap-6">
+            {FEATURES.map((feature, idx) => (
+              <div key={idx} className="flex flex-col rounded-2xl border border-zinc-200 bg-white p-6 shadow-sm dark:border-zinc-800/80 dark:bg-zinc-900/40 h-full">
+                <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-zinc-100 text-zinc-900 dark:bg-zinc-800 dark:text-zinc-50">
+                  {feature.icon}
+                </div>
+                <h3 className="mt-4 text-base font-bold text-zinc-900 dark:text-zinc-50">
+                  {feature.title}
+                </h3>
+                <p className="mt-2 text-xs leading-relaxed text-zinc-600 dark:text-zinc-400">
+                  {feature.desc}
+                </p>
               </div>
-              <h3 className="mt-4 text-base font-bold text-zinc-900 dark:text-zinc-50">
-                Preserve Existing Layouts
-              </h3>
-              <p className="mt-2 text-xs leading-relaxed text-zinc-600 dark:text-zinc-400">
-                Keep the precise look, logo positioning, and styling details of your current client documents.
-              </p>
-            </div>
+            ))}
+          </div>
 
-            {/* Feature 2 */}
-            <div className="flex flex-col rounded-2xl border border-zinc-200 bg-white p-6 shadow-sm dark:border-zinc-880/80 dark:bg-zinc-900/40">
-              <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-zinc-100 text-zinc-900 dark:bg-zinc-800 dark:text-zinc-50">
-                <Users className="h-5 w-5" />
-              </div>
-              <h3 className="mt-4 text-base font-bold text-zinc-900 dark:text-zinc-50">
-                Customer Management
-              </h3>
-              <p className="mt-2 text-xs leading-relaxed text-zinc-600 dark:text-zinc-400">
-                Maintain client details and default address presets for lightning-fast quotation inputs.
-              </p>
-            </div>
-
-            {/* Feature 3 */}
-            <div className="flex flex-col rounded-2xl border border-zinc-200 bg-white p-6 shadow-sm dark:border-zinc-880/80 dark:bg-zinc-900/40">
-              <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-zinc-100 text-zinc-900 dark:bg-zinc-800 dark:text-zinc-50">
-                <Briefcase className="h-5 w-5" />
-              </div>
-              <h3 className="mt-4 text-base font-bold text-zinc-900 dark:text-zinc-50">
-                Quotation Archiving
-              </h3>
-              <p className="mt-2 text-xs leading-relaxed text-zinc-600 dark:text-zinc-400">
-                Store, filter, and track status records for all generated quotes inside an organized dashboard.
-              </p>
-            </div>
-
-            {/* Feature 4 */}
-            <div className="flex flex-col rounded-2xl border border-zinc-200 bg-white p-6 shadow-sm dark:border-zinc-880/80 dark:bg-zinc-900/40 font-sans">
-              <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-zinc-100 text-zinc-900 dark:bg-zinc-800 dark:text-zinc-50">
-                <FileText className="h-5 w-5" />
-              </div>
-              <h3 className="mt-4 text-base font-bold text-zinc-900 dark:text-zinc-50">
-                Professional PDF Engine
-              </h3>
-              <p className="mt-2 text-xs leading-relaxed text-zinc-600 dark:text-zinc-400">
-                Generate high-quality vector printouts dynamically using server-side overlays.
-              </p>
-            </div>
-
-            {/* Feature 5 */}
-            <div className="flex flex-col rounded-2xl border border-zinc-200 bg-white p-6 shadow-sm dark:border-zinc-880/80 dark:bg-zinc-900/40">
-              <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-zinc-100 text-zinc-900 dark:bg-zinc-800 dark:text-zinc-50">
-                <Zap className="h-5 w-5" />
-              </div>
-              <h3 className="mt-4 text-base font-bold text-zinc-900 dark:text-zinc-50">
-                Rapid Creation
-              </h3>
-              <p className="mt-2 text-xs leading-relaxed text-zinc-600 dark:text-zinc-400">
-                Standardize table entry and automatic subtotal math for rapid multi-item creations.
-              </p>
-            </div>
+          {/* Mobile Stacking Deck */}
+          <div className="sm:hidden mx-auto mt-12 w-full max-w-[320px]">
+            <CardDeck>
+              {FEATURES.map((feature, idx) => (
+                <div key={idx} className="flex flex-col rounded-2xl border border-zinc-200 bg-white p-8 shadow-sm dark:border-zinc-700/50 dark:bg-zinc-900 h-full bg-gradient-to-b from-zinc-900 to-zinc-950">
+                  <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-zinc-100 text-zinc-900 dark:bg-zinc-800 dark:text-zinc-50">
+                    {feature.icon}
+                  </div>
+                  <h3 className="mt-6 text-lg font-bold text-zinc-900 dark:text-zinc-50">
+                    {feature.title}
+                  </h3>
+                  <p className="mt-3 text-sm leading-relaxed text-zinc-600 dark:text-zinc-400">
+                    {feature.desc}
+                  </p>
+                </div>
+              ))}
+            </CardDeck>
           </div>
         </div>
       </section>

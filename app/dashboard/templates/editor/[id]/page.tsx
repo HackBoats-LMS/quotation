@@ -25,7 +25,7 @@ export default async function EditorPage({ params }: EditorPageProps) {
   }
 
   // Fetch specific template metadata
-  const template = await getTemplateById(id);
+  const template = await getTemplateById(id, business.id);
   if (!template) {
     redirect("/dashboard/templates");
   }
