@@ -1,4 +1,5 @@
-import { createClient } from "@/lib/supabase/server";
+import { prisma } from "@/lib/prisma";
+import { getSession } from "@/lib/auth";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { PlusCircle, Search, FileText } from "lucide-react";
@@ -6,27 +7,33 @@ import Link from "next/link";
 import { Input } from "@/components/ui/input";
 import { DeleteButton } from "./DeleteButton";
 import { revalidatePath } from "next/cache";
+import { redirect } from "next/navigation";
 
 export default async function QuotationsPage() {
-  const supabase = await createClient();
-  const { data: { user } } = await supabase.auth.getUser();
+  const session = await getSession();
+  const userEmail = session?.user?.email;
 
-  const { data: profile } = await supabase
-    .from("profiles")
-    .select("business_id")
-    .eq("id", user!.id)
-    .single();
+  if (!userEmail) {
+    redirect("/auth/login");
+  }
 
-  const { data: quotations } = await supabase
-    .from("quotations")
-    .select("*, customers(name)")
-    .eq("business_id", profile?.business_id)
-    .order("created_at", { ascending: false });
+  const business = await prisma.businesses.findUnique({
+    where: { owner_email: userEmail },
+    select: { id: true }
+  });
+
+  if (!business) {
+    redirect("/onboarding");
+  }
+
+  const quotations = await prisma.quotations.findMany({
+    where: { business_id: business.id },
+    orderBy: { created_at: "desc" }
+  });
 
   const deleteQuotation = async (id: string) => {
     "use server";
-    const supabaseServer = await createClient();
-    await supabaseServer.from("quotations").delete().eq("id", id);
+    await prisma.quotations.delete({ where: { id } });
     revalidatePath("/quotations");
   };
 
@@ -70,7 +77,6 @@ export default async function QuotationsPage() {
                 <th className="px-6 py-4">Date</th>
                 <th className="px-6 py-4">Customer</th>
                 <th className="px-6 py-4">Amount</th>
-                <th className="px-6 py-4">Status</th>
                 <th className="px-6 py-4 text-right">Actions</th>
               </tr>
             </thead>
@@ -78,18 +84,9 @@ export default async function QuotationsPage() {
               {quotations.map((quote) => (
                 <tr key={quote.id} className="hover:bg-slate-50 transition-colors">
                   <td className="px-6 py-4 font-medium">{quote.quotation_number}</td>
-                  <td className="px-6 py-4 text-slate-500">{new Date(quote.quotation_date).toLocaleDateString()}</td>
-                  <td className="px-6 py-4 text-slate-500">{quote.customers?.name || "Unknown"}</td>
-                  <td className="px-6 py-4 font-medium">${quote.grand_total?.toFixed(2)}</td>
-                  <td className="px-6 py-4">
-                    <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
-                        quote.status === "Accepted" ? "bg-emerald-100 text-emerald-800" :
-                        quote.status === "Sent" ? "bg-amber-100 text-amber-800" :
-                        "bg-slate-100 text-slate-800"
-                      }`}>
-                        {quote.status}
-                    </span>
-                  </td>
+                  <td className="px-6 py-4 text-slate-500">{new Date(quote.created_at).toLocaleDateString()}</td>
+                  <td className="px-6 py-4 text-slate-500">{quote.customer_name || "Unknown"}</td>
+                  <td className="px-6 py-4 font-medium">${quote.grand_total?.toNumber().toFixed(2)}</td>
                   <td className="px-6 py-4 text-right flex justify-end gap-4 items-center">
                     <Link href={`/quotations/${quote.id}`} className="text-blue-600 hover:underline font-medium">
                       View

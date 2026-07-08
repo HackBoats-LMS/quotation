@@ -1,0 +1,191 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+}
+
+// ==========================================
+// NextAuth Models (Kept for /api/test-session)
+// ==========================================
+
+model Account {
+  id                String  @id @default(cuid())
+  userId            String
+  type              String
+  provider          String
+  providerAccountId String
+  refresh_token     String? @db.Text
+  access_token      String? @db.Text
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String? @db.Text
+  session_state     String?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+  @@map("accounts")
+}
+
+model Session {
+  id           String   @id @default(cuid())
+  sessionToken String   @unique
+  userId       String
+  expires      DateTime
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("sessions")
+}
+
+model User {
+  id            String    @id @default(cuid())
+  name          String?
+  email         String?   @unique
+  emailVerified DateTime?
+  password      String?
+  image         String?
+  role          String    @default("admin")
+  businessId    String?   @db.Uuid
+  accounts      Account[]
+  sessions      Session[]
+  business      businesses? @relation(fields: [businessId], references: [id])
+
+  @@map("users")
+}
+
+model VerificationToken {
+  identifier String
+  token      String   @unique
+  expires    DateTime
+
+  @@unique([identifier, token])
+  @@map("verification_tokens")
+}
+
+// ==========================================
+// Quotation API Models (Aligned with /api)
+// ==========================================
+
+model invited_users {
+  email String @id
+  @@map("invited_users")
+}
+
+model businesses {
+  id          String   @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  name        String
+  owner_name  String
+  address     String?
+  phone       String?
+  email       String?
+  owner_email String   @unique
+  website     String?
+  tax_number  String?
+  currency    String   @default("USD")
+  created_at  DateTime @default(now()) @db.Timestamptz(6)
+
+  templates   quotation_templates[]
+  quotations  quotations[]
+  users       User[]
+  products    products[]
+  customers   customers[]
+
+  @@map("businesses")
+}
+
+model quotation_templates {
+  id          String   @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  business_id String   @db.Uuid
+  pdf_path    String?
+  mappings    Json     @default("{}")
+  created_at  DateTime @default(now()) @db.Timestamptz(6)
+  
+  business    businesses @relation(fields: [business_id], references: [id], onDelete: Cascade)
+  quotations  quotations[]
+
+  @@map("quotation_templates")
+}
+
+model quotations {
+  id               String   @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  business_id      String   @db.Uuid
+  template_id      String   @db.Uuid
+  quotation_number String
+  customer_name    String?
+  customer_address String?
+  customer_phone   String?
+  customer_id      String?  @db.Uuid
+  line_items       Json     @default("[]")
+  subtotal         Decimal  @default(0) @db.Decimal(10, 2)
+  tax_rate         Decimal  @default(0) @db.Decimal(5, 2)
+  tax_amount       Decimal  @default(0) @db.Decimal(10, 2)
+  discount_amount  Decimal  @default(0) @db.Decimal(10, 2)
+  grand_total      Decimal  @default(0) @db.Decimal(10, 2)
+  notes            String?
+  pdf_path         String?
+  valid_until_date String?
+  created_at       DateTime @default(now()) @db.Timestamptz(6)
+
+  business    businesses @relation(fields: [business_id], references: [id], onDelete: Cascade)
+  template    quotation_templates @relation(fields: [template_id], references: [id], onDelete: Restrict)
+  customer    customers? @relation(fields: [customer_id], references: [id], onDelete: SetNull)
+  items       quotation_items[]
+
+  @@map("quotations")
+}
+
+model quotation_items {
+  id              String   @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  quotation_id    String   @db.Uuid
+  product_name    String
+  description     String?
+  quantity        Int      @default(1)
+  unit_price      Decimal  @default(0) @db.Decimal(10, 2)
+  tax_rate        Decimal  @default(0) @db.Decimal(5, 2)
+  discount_amount Decimal  @default(0) @db.Decimal(10, 2)
+  line_total      Decimal  @default(0) @db.Decimal(10, 2)
+
+  quotation       quotations @relation(fields: [quotation_id], references: [id], onDelete: Cascade)
+
+  @@map("quotation_items")
+}
+
+model products {
+  id                  String   @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  business_id         String   @db.Uuid
+  name                String
+  code                String?
+  description         String?
+  category            String?
+  unit_price          Decimal  @default(0) @db.Decimal(10, 2)
+  currency            String   @default("USD")
+  tax_percentage      Decimal  @default(0) @db.Decimal(5, 2)
+  discount_percentage Decimal  @default(0) @db.Decimal(5, 2)
+  unit_type           String   @default("Piece")
+  is_active           Boolean  @default(true)
+  created_at          DateTime @default(now()) @db.Timestamptz(6)
+
+  business            businesses @relation(fields: [business_id], references: [id], onDelete: Cascade)
+
+  @@map("products")
+}
+
+model customers {
+  id                  String   @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  business_id         String   @db.Uuid
+  name                String
+  email               String?
+  phone               String?
+  address             String?
+  created_at          DateTime @default(now()) @db.Timestamptz(6)
+
+  business            businesses @relation(fields: [business_id], references: [id], onDelete: Cascade)
+  quotations          quotations[]
+
+  @@map("customers")
+}

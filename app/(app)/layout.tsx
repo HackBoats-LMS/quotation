@@ -9,26 +9,29 @@ import {
   FileBox,
   Package
 } from "lucide-react";
-import { createClient } from "@/lib/supabase/server";
-import { redirect } from "next/navigation";
 import { Button } from "@/components/ui/button";
+import { getSession } from "@/lib/auth";
+import { prisma } from "@/lib/prisma";
+import LogoutButton from "@/components/dashboard/logout-button";
+import { redirect } from "next/navigation";
 
 export default async function AppLayout({ children }: { children: ReactNode }) {
-  const supabase = await createClient();
-  const { data: { user } } = await supabase.auth.getUser();
+  const session = await getSession();
+  const userEmail = session?.user?.email;
 
-  if (!user) {
+  if (!userEmail) {
     redirect("/auth/login");
   }
 
   // Get business name
-  const { data: profile } = await supabase
-    .from("profiles")
-    .select("business_id, businesses(name)")
-    .eq("id", user.id)
-    .single();
-
-  const businessName = (profile?.businesses as any)?.name || "My Business";
+  let businessName = "My Business";
+  const business = await prisma.businesses.findUnique({
+    where: { owner_email: userEmail },
+    select: { name: true }
+  });
+  if (business) {
+    businessName = business.name;
+  }
 
   return (
     <div className="flex h-screen overflow-hidden bg-slate-50">
@@ -58,17 +61,7 @@ export default async function AppLayout({ children }: { children: ReactNode }) {
         </nav>
 
         <div className="p-4 border-t border-slate-200">
-          <form action={async () => {
-            "use server";
-            const supabase = await createClient();
-            await supabase.auth.signOut();
-            redirect("/auth/login");
-          }}>
-            <Button variant="ghost" className="w-full justify-start text-slate-600 hover:text-red-600 hover:bg-red-50" type="submit">
-              <LogOut size={18} className="mr-2" />
-              Sign out
-            </Button>
-          </form>
+          <LogoutButton />
         </div>
       </aside>
 

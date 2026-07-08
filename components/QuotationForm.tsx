@@ -18,11 +18,12 @@ type QuotationItem = {
   unit_price: number;
   tax_rate: number;
   discount_amount: number;
+  discount_percentage?: number;
 };
 
 export default function QuotationForm({ customers, templates, products, business }: { customers: any[], templates: any[], products: any[], business: any }) {
   const [customerId, setCustomerId] = useState(customers.length === 0 ? "new" : "");
-  const [templateId, setTemplateId] = useState("");
+  const [templateId, setTemplateId] = useState(templates.length > 0 ? templates[0].id : "");
   const [quotationNumber, setQuotationNumber] = useState(`QT-${Math.floor(Math.random() * 10000).toString().padStart(4, "0")}`);
   const [validUntil, setValidUntil] = useState("");
   
@@ -60,7 +61,17 @@ export default function QuotationForm({ customers, templates, products, business
   };
 
   const handleItemChange = (id: string, field: keyof QuotationItem, value: any) => {
-    setItems(items.map(item => item.id === id ? { ...item, [field]: value } : item));
+    setItems(items.map(item => {
+      if (item.id !== id) return item;
+      
+      const updatedItem = { ...item, [field]: value };
+      
+      if ((field === "quantity" || field === "unit_price") && updatedItem.discount_percentage !== undefined) {
+        updatedItem.discount_amount = (updatedItem.discount_percentage / 100) * (updatedItem.quantity * updatedItem.unit_price);
+      }
+      
+      return updatedItem;
+    }));
   };
 
   const addBlankItem = () => {
@@ -76,6 +87,9 @@ export default function QuotationForm({ customers, templates, products, business
   };
 
   const addProductToQuotation = (product: any) => {
+    const discountPct = product.discount_percentage || 0;
+    const initialDiscountAmount = (discountPct / 100) * (product.unit_price * 1);
+
     setItems([...items, {
       id: Date.now().toString() + Math.random(),
       product_id: product.id,
@@ -84,7 +98,8 @@ export default function QuotationForm({ customers, templates, products, business
       quantity: 1,
       unit_price: product.unit_price,
       tax_rate: product.tax_percentage || business?.default_tax_rate || 0,
-      discount_amount: 0,
+      discount_amount: initialDiscountAmount,
+      discount_percentage: discountPct,
     }]);
   };
 
@@ -192,19 +207,7 @@ export default function QuotationForm({ customers, templates, products, business
     <form onSubmit={handleSubmit} className="space-y-8">
       <Card className="rounded-2xl shadow-sm border-slate-200">
         <CardContent className="p-6">
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-            <div className="space-y-2">
-              <Label>Template *</Label>
-              <select
-                value={templateId}
-                onChange={(e) => setTemplateId(e.target.value)}
-                required
-                className="flex h-10 w-full items-center justify-between rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-              >
-                <option value="" disabled>Select a template</option>
-                {templates.map(t => <option key={t.id} value={t.id}>{t.name}</option>)}
-              </select>
-            </div>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
 
             <div className="space-y-2">
               <Label>Customer *</Label>
@@ -230,6 +233,45 @@ export default function QuotationForm({ customers, templates, products, business
               <Input type="date" value={validUntil} onChange={(e) => setValidUntil(e.target.value)} className="rounded-xl" />
             </div>
           </div>
+
+          {customerId === "new" && (
+            <>
+              <hr className="my-6 border-slate-100" />
+              <h4 className="font-semibold text-sm mb-4">New Customer Details</h4>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div className="space-y-2">
+                  <Label>Customer Name *</Label>
+                  <Input 
+                    required 
+                    className="rounded-xl"
+                    value={customFieldsData.customer_name || ""}
+                    onChange={(e) => handleCustomFieldChange("customer_name", e.target.value)}
+                    placeholder="E.g. Acme Corp"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label>Email</Label>
+                  <Input 
+                    type="email"
+                    className="rounded-xl"
+                    value={customFieldsData.customer_email || ""}
+                    onChange={(e) => handleCustomFieldChange("customer_email", e.target.value)}
+                    placeholder="contact@acme.com"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label>Phone</Label>
+                  <Input 
+                    type="tel"
+                    className="rounded-xl"
+                    value={customFieldsData.customer_phone || ""}
+                    onChange={(e) => handleCustomFieldChange("customer_phone", e.target.value)}
+                    placeholder="+1 234 567 8900"
+                  />
+                </div>
+              </div>
+            </>
+          )}
 
           {activeCustomerFields.length > 0 && (
             <>
