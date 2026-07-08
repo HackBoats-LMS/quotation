@@ -1,4 +1,6 @@
-import { createClient } from "@/lib/supabase/server";
+import { prisma } from "@/lib/prisma";
+import { getServerSession } from "next-auth/next";
+import { authOptions } from "@/lib/auth";
 import { redirect } from "next/navigation";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -6,40 +8,45 @@ import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 
 export default async function BusinessSettingsPage() {
-  const supabase = await createClient();
-  const { data: { user } } = await supabase.auth.getUser();
+  const session = await getServerSession(authOptions);
 
-  if (!user) redirect("/auth/login");
+  if (!session?.user?.id) redirect("/auth/login");
 
-  const { data: profile } = await supabase
-    .from("profiles")
-    .select("business_id, businesses(*)")
-    .eq("id", user.id)
-    .single();
+  const user = await prisma.user.findUnique({
+    where: { id: session.user.id }
+  });
 
-  if (!profile?.business_id) redirect("/onboarding");
+  if (!user?.businessId) redirect("/onboarding");
 
-  const business = profile.businesses as any;
+  const business = await prisma.businesses.findUnique({
+    where: { id: user.businessId }
+  });
+
+  if (!business) redirect("/onboarding");
 
   async function updateBusiness(formData: FormData) {
     "use server";
-    const supabase = await createClient();
-    const { data: { user } } = await supabase.auth.getUser();
+    const session = await getServerSession(authOptions);
+    if (!session?.user?.id) return;
     
-    if (!user) return;
+    const user = await prisma.user.findUnique({
+      where: { id: session.user.id },
+      select: { businessId: true },
+    });
     
-    const { data: prof } = await supabase.from("profiles").select("business_id").eq("id", user.id).single();
-    
-    if (prof?.business_id) {
-      await supabase.from("businesses").update({
-        name: formData.get("name"),
-        email: formData.get("email"),
-        phone: formData.get("phone"),
-        website: formData.get("website"),
-        address: formData.get("address"),
-        tax_number: formData.get("tax_number"),
-        currency: formData.get("currency"),
-      }).eq("id", prof.business_id);
+    if (user?.businessId) {
+      await prisma.businesses.update({
+        where: { id: user.businessId },
+        data: {
+          name: formData.get("name") as string,
+          email: formData.get("email") as string,
+          phone: formData.get("phone") as string,
+          website: formData.get("website") as string,
+          address: formData.get("address") as string,
+          tax_number: formData.get("tax_number") as string,
+          currency: formData.get("currency") as string,
+        },
+      });
     }
   }
 
@@ -64,27 +71,27 @@ export default async function BusinessSettingsPage() {
               </div>
               <div className="space-y-2">
                 <Label htmlFor="email">Business Email</Label>
-                <Input id="email" name="email" type="email" defaultValue={business.email} className="rounded-xl" />
+                <Input id="email" name="email" type="email" defaultValue={business.email || ""} className="rounded-xl" />
               </div>
               <div className="space-y-2">
                 <Label htmlFor="phone">Phone Number</Label>
-                <Input id="phone" name="phone" defaultValue={business.phone} className="rounded-xl" />
+                <Input id="phone" name="phone" defaultValue={business.phone || ""} className="rounded-xl" />
               </div>
               <div className="space-y-2">
                 <Label htmlFor="website">Website</Label>
-                <Input id="website" name="website" defaultValue={business.website} className="rounded-xl" />
+                <Input id="website" name="website" defaultValue={business.website || ""} className="rounded-xl" />
               </div>
               <div className="space-y-2 md:col-span-2">
                 <Label htmlFor="address">Address</Label>
-                <Input id="address" name="address" defaultValue={business.address} className="rounded-xl" />
+                <Input id="address" name="address" defaultValue={business.address || ""} className="rounded-xl" />
               </div>
               <div className="space-y-2">
                 <Label htmlFor="tax_number">Tax Number</Label>
-                <Input id="tax_number" name="tax_number" defaultValue={business.tax_number} className="rounded-xl" />
+                <Input id="tax_number" name="tax_number" defaultValue={business.tax_number || ""} className="rounded-xl" />
               </div>
               <div className="space-y-2">
                 <Label htmlFor="currency">Currency</Label>
-                <Input id="currency" name="currency" defaultValue={business.currency} className="rounded-xl" />
+                <Input id="currency" name="currency" defaultValue={business.currency || ""} className="rounded-xl" />
               </div>
             </div>
             

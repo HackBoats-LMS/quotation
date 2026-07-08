@@ -2,8 +2,8 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { createClient } from "@/lib/supabase/client";
 import { Button } from "@/components/ui/button";
+import { completeOnboarding } from "./actions";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -20,7 +20,6 @@ export default function OnboardingPage() {
   });
   const [loading, setLoading] = useState(false);
   const router = useRouter();
-  const supabase = createClient();
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
@@ -30,29 +29,11 @@ export default function OnboardingPage() {
     e.preventDefault();
     setLoading(true);
 
-    const { data: { user } } = await supabase.auth.getUser();
+    const result = await completeOnboarding(formData);
 
-    if (!user) {
-      router.push("/auth/login");
-      return;
-    }
-
-    const { data: businessId, error: rpcError } = await supabase.rpc(
-      "create_business_and_profile",
-      {
-        p_name: formData.name,
-        p_email: formData.email,
-        p_phone: formData.phone,
-        p_address: formData.address,
-        p_website: formData.website,
-        p_tax_number: formData.tax_number,
-        p_currency: formData.currency
-      }
-    );
-
-    if (rpcError) {
-      console.error("RPC Error Details:", rpcError);
-      alert(`Setup Failed: ${rpcError.message || "Unknown Error"}. Did you run the latest SQL script in Supabase?`);
+    if (!result.success) {
+      console.error("Setup Error:", result.error);
+      alert(`Setup Failed: ${result.error}`);
       setLoading(false);
       return;
     }

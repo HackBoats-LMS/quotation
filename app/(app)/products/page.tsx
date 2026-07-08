@@ -1,95 +1,114 @@
-import { createClient } from "@/lib/supabase/server";
-import { Card, CardContent } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { PlusCircle, Search, Package } from "lucide-react";
+import { createAdminClient } from "@/lib/supabase/admin";
+import { getSession } from "@/lib/auth";
+import { prisma } from "@/lib/prisma";
+import { redirect } from "next/navigation";
 import Link from "next/link";
-import { Input } from "@/components/ui/input";
+import { Plus, Edit } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { 
+  Table, 
+  TableBody, 
+  TableCell, 
+  TableHead, 
+  TableHeader, 
+  TableRow 
+} from "@/components/ui/table";
 
 export default async function ProductsPage() {
-  const supabase = await createClient();
-  const { data: { user } } = await supabase.auth.getUser();
+  const session = await getSession();
+  const userEmail = session?.user?.email;
 
-  const { data: profile } = await supabase
-    .from("profiles")
-    .select("business_id")
-    .eq("id", user!.id)
-    .single();
+  if (!userEmail) redirect("/auth/login");
+
+  const business = await prisma.businesses.findUnique({
+    where: { owner_email: userEmail },
+    select: { id: true },
+  });
+
+  if (!business?.id) redirect("/onboarding");
+
+  const supabase = createAdminClient();
 
   const { data: products } = await supabase
     .from("products")
     .select("*")
-    .eq("business_id", profile?.business_id)
-    .order("created_at", { ascending: false });
+    .eq("business_id", business.id)
+    .order("name", { ascending: true });
 
   return (
     <div className="p-8 max-w-7xl mx-auto space-y-8">
-      <div className="flex justify-between items-center">
+      <div className="flex items-center justify-between border-b border-slate-200 pb-5">
         <div>
           <h1 className="text-3xl font-bold tracking-tight">Products & Services</h1>
-          <p className="text-slate-500 mt-1">Manage your catalog for quick quotation generation.</p>
+          <p className="text-slate-500 mt-1">Manage your catalog for quotations and invoicing.</p>
         </div>
         <Link href="/products/new">
-          <Button className="rounded-xl">
-            <PlusCircle className="mr-2" size={18} />
-            Add Product
+          <Button className="rounded-xl shadow-sm">
+            <Plus size={18} className="mr-2" />
+            Add New
           </Button>
         </Link>
       </div>
 
-      <div className="relative max-w-md">
-        <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={18} />
-        <Input placeholder="Search products by name or code..." className="pl-10 rounded-xl" />
-      </div>
-
-      {!products || products.length === 0 ? (
-        <Card className="border-dashed border-2 border-slate-200 bg-transparent rounded-2xl shadow-none">
-          <CardContent className="flex flex-col items-center justify-center py-24 text-center">
-            <Package className="h-12 w-12 text-slate-300 mb-4" />
-            <h3 className="text-lg font-semibold mb-1">No products found</h3>
-            <p className="text-slate-500 mb-4">Add products and services to your catalog to easily include them in quotes.</p>
-            <Link href="/products/new">
-              <Button variant="outline" className="rounded-xl">Add Product</Button>
-            </Link>
-          </CardContent>
-        </Card>
-      ) : (
-        <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
-          <table className="w-full text-sm text-left">
-            <thead className="bg-slate-50 text-slate-500 font-medium border-b border-slate-200 uppercase text-xs tracking-wider">
-              <tr>
-                <th className="px-6 py-4">Name</th>
-                <th className="px-6 py-4">Code</th>
-                <th className="px-6 py-4">Category</th>
-                <th className="px-6 py-4">Price</th>
-                <th className="px-6 py-4">Unit</th>
-                <th className="px-6 py-4 text-right">Actions</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-slate-100">
-              {products.map((product) => (
-                <tr key={product.id} className="hover:bg-slate-50 transition-colors">
-                  <td className="px-6 py-4 font-medium">{product.name}</td>
-                  <td className="px-6 py-4 text-slate-500">{product.code || "-"}</td>
-                  <td className="px-6 py-4 text-slate-500">
+      <div className="rounded-xl border border-slate-200 overflow-hidden bg-white shadow-sm">
+        <Table>
+          <TableHeader className="bg-slate-50/50">
+            <TableRow>
+              <TableHead className="w-[300px]">Name</TableHead>
+              <TableHead>SKU</TableHead>
+              <TableHead>Category</TableHead>
+              <TableHead>Price</TableHead>
+              <TableHead className="text-right">Actions</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {products && products.length > 0 ? (
+              products.map((product) => (
+                <TableRow key={product.id}>
+                  <TableCell className="font-medium">
+                    {product.name}
+                    {product.unit_type && (
+                      <span className="text-xs text-slate-500 block">per {product.unit_type}</span>
+                    )}
+                  </TableCell>
+                  <TableCell className="text-slate-500">{product.code || "—"}</TableCell>
+                  <TableCell>
                     {product.category ? (
-                      <span className="bg-slate-100 text-slate-700 px-2 py-1 rounded text-xs">{product.category}</span>
-                    ) : "-"}
-                  </td>
-                  <td className="px-6 py-4 font-medium">
-                    {Number(product.unit_price).toFixed(2)} <span className="text-xs text-slate-400">{product.currency}</span>
-                  </td>
-                  <td className="px-6 py-4 text-slate-500">{product.unit_type}</td>
-                  <td className="px-6 py-4 text-right">
-                    <Link href={`/products/${product.id}`} className="text-blue-600 hover:underline font-medium">
-                      Edit
+                      <span className="inline-flex items-center rounded-md bg-blue-50 px-2 py-1 text-xs font-medium text-blue-700 ring-1 ring-inset ring-blue-700/10">
+                        {product.category}
+                      </span>
+                    ) : (
+                      <span className="text-slate-400">—</span>
+                    )}
+                  </TableCell>
+                  <TableCell>
+                    {new Intl.NumberFormat("en-US", {
+                      style: "currency",
+                      currency: product.currency || "USD"
+                    }).format(product.unit_price || 0)}
+                  </TableCell>
+                  <TableCell className="text-right">
+                    <Link href={`/products/${product.id}`}>
+                      <Button variant="ghost" size="sm" className="h-8 text-blue-600 hover:text-blue-700 hover:bg-blue-50 rounded-lg">
+                        <Edit size={16} className="mr-1.5" /> Edit
+                      </Button>
                     </Link>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      )}
+                  </TableCell>
+                </TableRow>
+              ))
+            ) : (
+              <TableRow>
+                <TableCell colSpan={5} className="h-32 text-center text-slate-500">
+                  <div className="flex flex-col items-center justify-center">
+                    <p className="text-base font-medium text-slate-900 mb-1">No products found</p>
+                    <p>Get started by adding your first product or service.</p>
+                  </div>
+                </TableCell>
+              </TableRow>
+            )}
+          </TableBody>
+        </Table>
+      </div>
     </div>
   );
 }

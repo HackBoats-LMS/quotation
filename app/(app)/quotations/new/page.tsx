@@ -1,37 +1,39 @@
-import { createClient } from "@/lib/supabase/server";
+import { prisma } from "@/lib/prisma";
+import { getSession } from "@/lib/auth";
 import { redirect } from "next/navigation";
 import QuotationForm from "@/components/QuotationForm";
 
 export default async function NewQuotationPage() {
-  const supabase = await createClient();
-  const { data: { user } } = await supabase.auth.getUser();
+  const session = await getSession();
+  const userEmail = session?.user?.email;
 
-  if (!user) redirect("/auth/login");
+  if (!userEmail) {
+    redirect("/auth/login");
+  }
 
-  const { data: profile } = await supabase
-    .from("profiles")
-    .select("business_id, businesses(*)")
-    .eq("id", user.id)
-    .single();
+  const business = await prisma.businesses.findUnique({
+    where: { owner_email: userEmail },
+  });
 
-  if (!profile?.business_id) redirect("/onboarding");
+  if (!business) {
+    redirect("/onboarding");
+  }
 
-  // Fetch necessary data for dropdowns
-  const { data: customers } = await supabase
-    .from("customers")
-    .select("*")
-    .eq("business_id", profile.business_id);
+  const templates = await prisma.quotation_templates.findMany({
+    where: { business_id: business.id },
+  });
 
-  const { data: templates } = await supabase
-    .from("templates")
-    .select("*")
-    .eq("business_id", profile.business_id);
+  const customers = await prisma.customers.findMany({
+    where: { business_id: business.id },
+  });
 
-  const { data: products } = await supabase
-    .from("products")
-    .select("*")
-    .eq("business_id", profile.business_id)
-    .eq("is_active", true);
+  const products = await prisma.products.findMany({
+    where: { business_id: business.id },
+  });
+
+  // Serialize Prisma models containing Decimals to plain objects for the Client Component
+  const serializedCustomers = JSON.parse(JSON.stringify(customers));
+  const serializedProducts = JSON.parse(JSON.stringify(products));
 
   return (
     <div className="p-8 max-w-5xl mx-auto">
@@ -41,10 +43,10 @@ export default async function NewQuotationPage() {
       </div>
 
       <QuotationForm 
-        customers={customers || []} 
+        customers={serializedCustomers} 
         templates={templates || []} 
-        products={products || []}
-        business={profile.businesses}
+        products={serializedProducts}
+        business={business}
       />
     </div>
   );

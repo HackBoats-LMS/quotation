@@ -1,6 +1,10 @@
 "use client";
 
 import { Document, Page, Text, View, StyleSheet, Image as PDFImage, Font } from "@react-pdf/renderer";
+import ClassicLayout from "./layouts/ClassicLayout";
+import ModernLayout from "./layouts/ModernLayout";
+import MinimalLayout from "./layouts/MinimalLayout";
+import BoldLayout from "./layouts/BoldLayout";
 
 Font.register({
   family: 'Oswald',
@@ -15,95 +19,122 @@ Font.register({
 // Default fonts from react-pdf
 const styles = StyleSheet.create({
   page: {
-    padding: 40,
+    padding: 50,
     fontFamily: "Helvetica",
-    fontSize: 11,
-    color: "#333",
+    fontSize: 10,
+    color: "#334155",
   },
   header: {
     flexDirection: "row",
     justifyContent: "space-between",
-    marginBottom: 40,
+    marginBottom: 50,
+    borderBottomWidth: 1,
+    borderBottomColor: "#e2e8f0",
+    paddingBottom: 20,
   },
   logo: {
-    width: 100,
+    width: 120,
   },
   companyInfo: {
     alignItems: "flex-end",
   },
-  title: {
-    fontSize: 24,
+  companyName: {
+    fontSize: 18,
     fontWeight: "bold",
-    marginBottom: 10,
-    color: "#1e293b",
+    color: "#0f172a",
+    marginBottom: 4,
+  },
+  companyDetails: {
+    fontSize: 10,
+    color: "#64748b",
+    marginTop: 2,
+  },
+  title: {
+    fontSize: 32,
+    fontWeight: "bold",
+    color: "#0f172a",
+    letterSpacing: 1,
   },
   section: {
-    marginBottom: 20,
+    marginBottom: 30,
   },
   row: {
     flexDirection: "row",
     justifyContent: "space-between",
-    marginBottom: 10,
+    marginBottom: 12,
   },
   label: {
     fontWeight: "bold",
     color: "#64748b",
-    fontSize: 10,
+    fontSize: 9,
+    textTransform: "uppercase",
+    letterSpacing: 0.5,
   },
   value: {
-    fontSize: 11,
+    fontSize: 10,
+    color: "#0f172a",
+    fontWeight: "bold",
   },
   table: {
-    marginTop: 20,
+    marginTop: 10,
     width: "100%",
   },
   tableHeader: {
     flexDirection: "row",
     borderBottomWidth: 1,
     borderBottomColor: "#cbd5e1",
-    paddingBottom: 5,
-    marginBottom: 10,
+    paddingBottom: 8,
+    paddingTop: 8,
+    backgroundColor: "#f8fafc",
+  },
+  tableHeaderCell: {
+    fontWeight: "bold",
+    color: "#475569",
+    fontSize: 9,
+    textTransform: "uppercase",
   },
   tableRow: {
     flexDirection: "row",
-    paddingBottom: 8,
-    paddingTop: 8,
+    paddingBottom: 12,
+    paddingTop: 12,
     borderBottomWidth: 1,
     borderBottomColor: "#f1f5f9",
   },
-  col1: { width: "40%" },
+  col1: { width: "45%", paddingLeft: 8 },
   col2: { width: "15%", textAlign: "center" },
   col3: { width: "20%", textAlign: "right" },
-  col4: { width: "25%", textAlign: "right" },
+  col4: { width: "20%", textAlign: "right", paddingRight: 8 },
   totals: {
-    marginTop: 20,
+    marginTop: 24,
     alignItems: "flex-end",
+    paddingRight: 8,
   },
   totalRow: {
     flexDirection: "row",
     justifyContent: "space-between",
-    width: 200,
-    paddingVertical: 4,
+    width: "45%",
+    paddingVertical: 6,
   },
   grandTotal: {
     fontWeight: "bold",
-    fontSize: 14,
-    marginTop: 4,
-    paddingTop: 4,
-    borderTopWidth: 1,
+    fontSize: 16,
+    marginTop: 8,
+    paddingTop: 12,
+    borderTopWidth: 2,
     borderTopColor: "#cbd5e1",
+    color: "#0f172a",
   },
   footer: {
     position: "absolute",
     bottom: 30,
-    left: 40,
-    right: 40,
+    left: 50,
+    right: 50,
     textAlign: "center",
     color: "#94a3b8",
     fontSize: 9,
     borderTopWidth: 1,
     borderTopColor: "#e2e8f0",
-    paddingTop: 10,
+    paddingTop: 12,
   }
 });
 
@@ -140,21 +171,27 @@ export default function QuotationPDF({ quotation, items, business, customer, tem
     quotation_number: quotation.quotation_number,
     quotation_date: new Date(quotation.quotation_date).toLocaleDateString(),
     valid_until: quotation.valid_until_date ? new Date(quotation.valid_until_date).toLocaleDateString() : "",
-    subtotal: `Rs. ${quotation.subtotal.toFixed(2)}`,
-    tax: `Rs. ${quotation.tax_amount.toFixed(2)}`,
-    discount: `Rs. ${quotation.discount_amount.toFixed(2)}`,
-    grand_total: `Rs. ${quotation.grand_total.toFixed(2)}`,
+    subtotal: `Rs. ${Number(quotation?.subtotal || 0).toFixed(2)}`,
+    tax: `Rs. ${Number(quotation?.tax_amount || 0).toFixed(2)}`,
+    discount: `Rs. ${Number(quotation?.discount_amount || 0).toFixed(2)}`,
+    grand_total: `Rs. ${Number(quotation?.grand_total || 0).toFixed(2)}`,
   };
 
   const templateElements = template?.canvas_data?.canvas_data?.elements || template?.canvas_data?.elements || [];
   const templateSettings = template?.canvas_data?.canvas_data?.settings || template?.canvas_data?.settings || {};
 
+  // Resolve background image correctly regardless of where it is stored in the template JSON
+  const bgImage = templateSettings.backgroundImage || template?.background_url || template?.mappings?.background_url;
+
+  // --- DYNAMIC THEME LOGIC ---
+  const layoutType = template?.layout || template?.mappings?.layout || "Classic";
+
   return (
     <Document>
       <Page size={template?.layout === "A4 Landscape" ? "A4" : "A4"} orientation={template?.layout === "A4 Landscape" ? "landscape" : "portrait"} style={[styles.page, { padding: 0, backgroundColor: templateSettings.backgroundColor || '#FFFFFF' }]}>
-        {templateSettings.backgroundImage && (
+        {bgImage && (
           <PDFImage 
-            src={templateSettings.backgroundImage} 
+            src={bgImage} 
             fixed
             style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, zIndex: -1 }} 
           />
@@ -162,7 +199,7 @@ export default function QuotationPDF({ quotation, items, business, customer, tem
         
         {/* Render elements based on template layout */}
         {templateElements.length > 0 ? (
-          <View style={{ padding: 40, flexDirection: "row", flexWrap: "wrap", width: "100%" }}>
+          <View style={{ padding: 50, flexDirection: "row", flexWrap: "wrap", width: "100%" }}>
             {templateElements.flatMap((el: any) => {
               const result = [];
               
@@ -237,17 +274,17 @@ export default function QuotationPDF({ quotation, items, business, customer, tem
                 result.push(
                   <View key={el.id} style={[styles.table, commonContainerStyles, { borderColor: borderColor, borderWidth: borderSize, backgroundColor: rowBg }]}>
                     <View style={[styles.tableHeader, { backgroundColor: headerBg, padding: 5, borderBottomColor: borderColor, borderBottomWidth: borderSize }]}>
-                      <Text style={[styles.col1, styles.label, { color: headerColor }]}>DESCRIPTION</Text>
-                      <Text style={[styles.col2, styles.label, { color: headerColor }]}>QTY</Text>
-                      <Text style={[styles.col3, styles.label, { color: headerColor }]}>UNIT PRICE</Text>
-                      <Text style={[styles.col4, styles.label, { color: headerColor }]}>AMOUNT</Text>
+                      <Text style={[styles.tableHeaderCell, styles.col1, { color: headerColor }]}>DESCRIPTION</Text>
+                      <Text style={[styles.tableHeaderCell, styles.col2, { color: headerColor }]}>QTY</Text>
+                      <Text style={[styles.tableHeaderCell, styles.col3, { color: headerColor }]}>UNIT PRICE</Text>
+                      <Text style={[styles.tableHeaderCell, styles.col4, { color: headerColor }]}>AMOUNT</Text>
                     </View>
-                    {items.map((item: any) => (
-                      <View key={item.id} style={[styles.tableRow, { paddingHorizontal: 5, borderBottomColor: borderColor, borderBottomWidth: borderSize }]}>
-                        <Text style={[styles.col1, { color: rowColor }]}>{item.product_name}</Text>
+                    {items.map((item: any, index: number) => (
+                      <View key={item.id || index} style={[styles.tableRow, { paddingHorizontal: 5, borderBottomColor: borderColor, borderBottomWidth: borderSize }]}>
+                        <Text style={[styles.col1, { color: rowColor }]}>{item.product_name || item.description}</Text>
                         <Text style={[styles.col2, { color: rowColor }]}>{item.quantity}</Text>
-                      <Text style={[styles.col3, { color: rowColor }]}>Rs. {Number(item.unit_price).toFixed(2)}</Text>
-                      <Text style={[styles.col4, { color: rowColor }]}>Rs. {Number(item.line_total).toFixed(2)}</Text>
+                      <Text style={[styles.col3, { color: rowColor }]}>Rs. {Number(item?.unit_price || 0).toFixed(2)}</Text>
+                      <Text style={[styles.col4, { color: rowColor }]}>Rs. {Number(item?.line_total || item?.total_price || 0).toFixed(2)}</Text>
                       </View>
                     ))}
                     
@@ -281,68 +318,10 @@ export default function QuotationPDF({ quotation, items, business, customer, tem
             })}
           </View>
         ) : (
-          // Fallback Default Layout if template is empty
-          <>
-            <View style={styles.header}>
-              <View>
-                <Text style={styles.title}>QUOTATION</Text>
-                <Text style={styles.label}>Quote No: <Text style={styles.value}>{quotation.quotation_number}</Text></Text>
-                <Text style={styles.label}>Date: <Text style={styles.value}>{dict.quotation_date}</Text></Text>
-              </View>
-              <View style={styles.companyInfo}>
-                <Text style={{ fontWeight: "bold", fontSize: 14 }}>{dict.company_name}</Text>
-                {dict.company_email && <Text>{dict.company_email}</Text>}
-                {dict.company_phone && <Text>{dict.company_phone}</Text>}
-              </View>
-            </View>
-
-            <View style={styles.section}>
-              <Text style={styles.label}>QUOTATION FOR:</Text>
-              <Text style={{ fontWeight: "bold", marginTop: 4 }}>{dict.customer_name}</Text>
-              {dict.customer_company && <Text>{dict.customer_company}</Text>}
-              {dict.customer_email && <Text>{dict.customer_email}</Text>}
-            </View>
-
-            <View style={styles.table}>
-              <View style={styles.tableHeader}>
-                <Text style={[styles.col1, styles.label]}>DESCRIPTION</Text>
-                <Text style={[styles.col2, styles.label]}>QTY</Text>
-                <Text style={[styles.col3, styles.label]}>UNIT PRICE</Text>
-                <Text style={[styles.col4, styles.label]}>AMOUNT</Text>
-              </View>
-              {items.map((item: any) => (
-                <View key={item.id} style={styles.tableRow}>
-                  <Text style={styles.col1}>{item.product_name}</Text>
-                  <Text style={styles.col2}>{item.quantity}</Text>
-                  <Text style={styles.col3}>Rs. {Number(item.unit_price).toFixed(2)}</Text>
-                  <Text style={styles.col4}>Rs. {Number(item.line_total).toFixed(2)}</Text>
-                </View>
-              ))}
-              
-              <View style={styles.totals}>
-                <View style={styles.totalRow}>
-                  <Text style={styles.label}>SUBTOTAL</Text>
-                  <Text style={styles.value}>{dict.subtotal}</Text>
-                </View>
-                {quotation.discount_amount > 0 && (
-                  <View style={styles.totalRow}>
-                    <Text style={styles.label}>DISCOUNT</Text>
-                    <Text style={styles.value}>-{dict.discount}</Text>
-                  </View>
-                )}
-                {quotation.tax_amount > 0 && (
-                  <View style={styles.totalRow}>
-                    <Text style={styles.label}>TAX</Text>
-                    <Text style={styles.value}>{dict.tax}</Text>
-                  </View>
-                )}
-                <View style={[styles.totalRow, styles.grandTotal]}>
-                  <Text>TOTAL DUE</Text>
-                  <Text>{dict.grand_total}</Text>
-                </View>
-              </View>
-            </View>
-          </>
+          layoutType === "Modern" ? <ModernLayout quotation={quotation} items={items} dict={dict} hasBackground={!!bgImage} /> :
+          layoutType === "Minimal" ? <MinimalLayout quotation={quotation} items={items} dict={dict} hasBackground={!!bgImage} /> :
+          layoutType === "Bold" ? <BoldLayout quotation={quotation} items={items} dict={dict} hasBackground={!!bgImage} /> :
+          <ClassicLayout quotation={quotation} items={items} dict={dict} hasBackground={!!bgImage} />
         )}
 
       </Page>

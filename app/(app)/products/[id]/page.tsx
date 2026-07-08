@@ -1,4 +1,6 @@
-import { createClient } from "@/lib/supabase/server";
+import { createAdminClient } from "@/lib/supabase/admin";
+import { getSession } from "@/lib/auth";
+import { prisma } from "@/lib/prisma";
 import { redirect } from "next/navigation";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -9,24 +11,25 @@ import Link from "next/link";
 
 export default async function EditProductPage(props: { params: Promise<{ id: string }> }) {
   const params = await props.params;
-  const supabase = await createClient();
-  const { data: { user } } = await supabase.auth.getUser();
+  const session = await getSession();
+  const userEmail = session?.user?.email;
 
-  if (!user) redirect("/auth/login");
+  if (!userEmail) redirect("/auth/login");
 
-  const { data: profile } = await supabase
-    .from("profiles")
-    .select("business_id")
-    .eq("id", user.id)
-    .single();
+  const business = await prisma.businesses.findUnique({
+    where: { owner_email: userEmail },
+    select: { id: true },
+  });
 
-  if (!profile?.business_id) redirect("/onboarding");
+  if (!business?.id) redirect("/onboarding");
+  const businessId = business.id;
 
+  const supabase = createAdminClient();
   const { data: product } = await supabase
     .from("products")
     .select("*")
     .eq("id", params.id)
-    .eq("business_id", profile.business_id)
+    .eq("business_id", businessId)
     .single();
 
   if (!product) {
@@ -35,7 +38,7 @@ export default async function EditProductPage(props: { params: Promise<{ id: str
 
   async function updateProduct(formData: FormData) {
     "use server";
-    const supabase = await createClient();
+    const supabase = createAdminClient();
     
     await supabase.from("products").update({
       name: formData.get("name"),
@@ -54,7 +57,7 @@ export default async function EditProductPage(props: { params: Promise<{ id: str
 
   async function deleteProduct() {
     "use server";
-    const supabase = await createClient();
+    const supabase = createAdminClient();
     await supabase.from("products").delete().eq("id", params.id);
     redirect("/products");
   }

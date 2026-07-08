@@ -1,42 +1,62 @@
-import { createClient } from "@/lib/supabase/server";
+import { prisma } from "@/lib/prisma";
+import { getSession } from "@/lib/auth";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { FileText, CheckCircle, Send, Clock } from "lucide-react";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
+import { redirect } from "next/navigation";
 
 export default async function DashboardPage() {
-  const supabase = await createClient();
-  const { data: { user } } = await supabase.auth.getUser();
-  
-  // Get business ID
-  const { data: profile } = await supabase
-    .from("profiles")
-    .select("business_id")
-    .eq("id", user!.id)
-    .single();
+  const session = await getSession();
+  const userEmail = session?.user?.email;
 
-  const businessId = profile?.business_id;
+  if (!userEmail) {
+    console.log("Redirecting to login because no Supabase or NextAuth user found!");
+    redirect("/auth/login");
+  }
+
+  // Get business ID
+  const business = await prisma.businesses.findUnique({
+    where: { owner_email: userEmail },
+    select: { id: true, name: true },
+  });
+
+  const businessId = business?.id;
+
+  if (!businessId) {
+    // If they logged in but haven't onboarded
+    redirect("/onboarding");
+  }
 
   // Get Quotation Stats
-  const { data: quotations } = await supabase
-    .from("quotations")
-    .select("status, grand_total, created_at, id, quotation_number, customers(name)")
-    .eq("business_id", businessId)
-    .order("created_at", { ascending: false });
+  const quotationsList = await prisma.quotations.findMany({
+    where: { business_id: businessId },
+    select: {
+      id: true,
+      quotation_number: true,
+      customer_name: true,
+      grand_total: true,
+      created_at: true,
+    },
+    orderBy: { created_at: "desc" },
+  });
 
-  const totalQuotations = quotations?.length || 0;
-  const draftQuotations = quotations?.filter(q => q.status === "Draft").length || 0;
-  const sentQuotations = quotations?.filter(q => q.status === "Sent").length || 0;
-  const acceptedQuotations = quotations?.filter(q => q.status === "Accepted").length || 0;
+  const totalQuotations = quotationsList.length || 0;
+  
+  // Since the new schema does not have a status field, we'll just mock these for now,
+  // or default to Draft. The /api doesn't seem to insert a status field.
+  const draftQuotations = totalQuotations; 
+  const sentQuotations = 0;
+  const acceptedQuotations = 0;
 
-  const recentQuotations = quotations?.slice(0, 5) || [];
+  const recentQuotations = quotationsList.slice(0, 5) || [];
 
   return (
     <div className="p-8 max-w-7xl mx-auto space-y-8">
       <div className="flex justify-between items-center">
         <div>
           <h1 className="text-3xl font-bold tracking-tight">Dashboard</h1>
-          <p className="text-slate-500 mt-1">Welcome back! Here's an overview of your business.</p>
+          <p className="text-slate-500 mt-1">Welcome back, {business.name}! Here's an overview of your business.</p>
         </div>
         <div className="flex gap-3">
           <Link href="/templates/new">
@@ -75,16 +95,12 @@ export default async function DashboardPage() {
                   <div key={quote.id} className="flex items-center justify-between p-4 border border-slate-100 rounded-xl hover:bg-slate-50 transition-colors">
                     <div>
                       <p className="font-semibold">{quote.quotation_number}</p>
-                      <p className="text-sm text-slate-500">{(quote.customers as any)?.name || "Unknown Customer"}</p>
+                      <p className="text-sm text-slate-500">{quote.customer_name || "Unknown Customer"}</p>
                     </div>
                     <div className="text-right">
-                      <p className="font-semibold">${quote.grand_total?.toFixed(2)}</p>
-                      <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
-                        quote.status === "Accepted" ? "bg-emerald-100 text-emerald-800" :
-                        quote.status === "Sent" ? "bg-amber-100 text-amber-800" :
-                        "bg-slate-100 text-slate-800"
-                      }`}>
-                        {quote.status}
+                      <p className="font-semibold">${quote.grand_total?.toNumber().toFixed(2)}</p>
+                      <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-slate-100 text-slate-800">
+                        Draft
                       </span>
                     </div>
                   </div>
@@ -99,9 +115,6 @@ export default async function DashboardPage() {
             <CardTitle>Quick Actions</CardTitle>
           </CardHeader>
           <CardContent className="space-y-3">
-            <Link href="/customers/new" className="block p-4 border border-slate-100 rounded-xl hover:bg-slate-50 transition-colors font-medium">
-              + Add New Customer
-            </Link>
             <Link href="/templates/new" className="block p-4 border border-slate-100 rounded-xl hover:bg-slate-50 transition-colors font-medium">
               + Create Template
             </Link>
