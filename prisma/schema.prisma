@@ -86,8 +86,10 @@ model businesses {
   owner_email String   @unique
   website     String?
   tax_number  String?
-  currency    String   @default("USD")
-  created_at  DateTime @default(now()) @db.Timestamptz(6)
+  currency              String   @default("USD")
+  default_tax_rate      Decimal? @default(0) @db.Decimal(5, 2)
+  default_discount_rate Decimal? @default(0) @db.Decimal(5, 2)
+  created_at            DateTime @default(now()) @db.Timestamptz(6)
 
   templates   quotation_templates[]
   quotations  quotations[]

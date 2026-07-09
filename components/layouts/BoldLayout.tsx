@@ -2,7 +2,7 @@ import { Text, View } from "@react-pdf/renderer";
 
 export default function BoldLayout({ quotation, items, dict, hasBackground }: any) {
   return (
-    <View style={{ padding: 40, height: "100%", backgroundColor: hasBackground ? 'transparent' : '#ffffff', fontFamily: "Helvetica" }}>
+    <View style={{ paddingHorizontal: 40, backgroundColor: hasBackground ? 'transparent' : '#ffffff', fontFamily: "Helvetica" }}>
       {/* Header */}
       <View style={{ flexDirection: "row", justifyContent: hasBackground ? "flex-end" : "space-between", borderBottomWidth: hasBackground ? 0 : 4, borderBottomColor: "#000000", paddingBottom: 20, marginBottom: 30 }}>
         {!hasBackground && (
@@ -53,7 +53,7 @@ export default function BoldLayout({ quotation, items, dict, hasBackground }: an
         </View>
         
         {items.map((item: any, index: number) => (
-          <View key={item.id || index} style={{ flexDirection: "row", padding: 10, borderBottomWidth: index === items.length - 1 ? 0 : 2, borderBottomColor: "#000000" }}>
+          <View key={item.id || index} style={{ flexDirection: "row", padding: 10, borderBottomWidth: index === items.length - 1 ? 0 : 2, borderBottomColor: "#000000" }} wrap={false}>
             <Text style={{ width: "50%", color: "#000000", fontSize: 12, fontWeight: "bold" }}>{item.product_name || item.description}</Text>
             <Text style={{ width: "15%", color: "#000000", fontSize: 12, fontWeight: "bold", textAlign: "center" }}>{item.quantity}</Text>
             <Text style={{ width: "15%", color: "#000000", fontSize: 12, fontWeight: "bold", textAlign: "right" }}>Rs. {Number(item?.unit_price || 0).toFixed(2)}</Text>

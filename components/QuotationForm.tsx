@@ -30,6 +30,9 @@ export default function QuotationForm({ customers, templates, products, business
   // Custom template fields
   const [customFieldsData, setCustomFieldsData] = useState<Record<string, any>>({});
   
+  const [globalTaxRate, setGlobalTaxRate] = useState(business?.default_tax_rate || 0);
+  const [globalDiscountRate, setGlobalDiscountRate] = useState(business?.default_discount_rate || 0);
+
   const [items, setItems] = useState<QuotationItem[]>([]);
   const [loading, setLoading] = useState(false);
   
@@ -63,14 +66,7 @@ export default function QuotationForm({ customers, templates, products, business
   const handleItemChange = (id: string, field: keyof QuotationItem, value: any) => {
     setItems(items.map(item => {
       if (item.id !== id) return item;
-      
-      const updatedItem = { ...item, [field]: value };
-      
-      if ((field === "quantity" || field === "unit_price") && updatedItem.discount_percentage !== undefined) {
-        updatedItem.discount_amount = (updatedItem.discount_percentage / 100) * (updatedItem.quantity * updatedItem.unit_price);
-      }
-      
-      return updatedItem;
+      return { ...item, [field]: value };
     }));
   };
 
@@ -81,15 +77,12 @@ export default function QuotationForm({ customers, templates, products, business
       description: "",
       quantity: 1,
       unit_price: 0,
-      tax_rate: business?.default_tax_rate || 0,
+      tax_rate: 0,
       discount_amount: 0,
     }]);
   };
 
   const addProductToQuotation = (product: any) => {
-    const discountPct = product.discount_percentage || 0;
-    const initialDiscountAmount = (discountPct / 100) * (product.unit_price * 1);
-
     setItems([...items, {
       id: Date.now().toString() + Math.random(),
       product_id: product.id,
@@ -97,9 +90,8 @@ export default function QuotationForm({ customers, templates, products, business
       description: product.description || "",
       quantity: 1,
       unit_price: product.unit_price,
-      tax_rate: product.tax_percentage || business?.default_tax_rate || 0,
-      discount_amount: initialDiscountAmount,
-      discount_percentage: discountPct,
+      tax_rate: 0,
+      discount_amount: 0,
     }]);
   };
 
@@ -108,11 +100,11 @@ export default function QuotationForm({ customers, templates, products, business
   };
 
   const calculateSubtotal = () => items.reduce((sum, item) => sum + (item.quantity * item.unit_price), 0);
-  const calculateTotalDiscount = () => items.reduce((sum, item) => sum + item.discount_amount, 0);
-  const calculateTotalTax = () => items.reduce((sum, item) => {
-    const lineTotalBeforeTax = (item.quantity * item.unit_price) - item.discount_amount;
-    return sum + (lineTotalBeforeTax * (item.tax_rate / 100));
-  }, 0);
+  const calculateTotalDiscount = () => calculateSubtotal() * (Number(globalDiscountRate) / 100);
+  const calculateTotalTax = () => {
+    const subAfterDiscount = calculateSubtotal() - calculateTotalDiscount();
+    return Math.max(0, subAfterDiscount * (Number(globalTaxRate) / 100));
+  };
   const calculateGrandTotal = () => calculateSubtotal() - calculateTotalDiscount() + calculateTotalTax();
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -185,9 +177,9 @@ export default function QuotationForm({ customers, templates, products, business
         description: item.description,
         quantity: item.quantity,
         unit_price: item.unit_price,
-        tax_rate: item.tax_rate,
-        discount_amount: item.discount_amount,
-        line_total: (item.quantity * item.unit_price) - item.discount_amount + (((item.quantity * item.unit_price) - item.discount_amount) * (item.tax_rate / 100))
+        tax_rate: 0,
+        discount_amount: 0,
+        line_total: item.quantity * item.unit_price
       }));
 
       const { error: itemsError } = await supabase
@@ -339,14 +331,12 @@ export default function QuotationForm({ customers, templates, products, business
 
         <CardContent className="p-0">
           <div className="overflow-x-auto">
-            <table className="w-full text-sm text-left">
+            <table className="w-full text-sm text-left min-w-[800px]">
               <thead className="bg-slate-50/50 text-slate-500 border-b border-slate-100">
                 <tr>
                   <th className="px-6 py-3 font-medium">Item Name</th>
                   <th className="px-4 py-3 font-medium w-24">Qty</th>
                   <th className="px-4 py-3 font-medium w-32">Unit Price</th>
-                  <th className="px-4 py-3 font-medium w-28">Discount</th>
-                  <th className="px-4 py-3 font-medium w-24">Tax %</th>
                   <th className="px-6 py-3 font-medium text-right w-32">Total</th>
                   <th className="px-4 py-3 w-12"></th>
                 </tr>
@@ -354,13 +344,13 @@ export default function QuotationForm({ customers, templates, products, business
               <tbody className="divide-y divide-slate-100">
                 {items.length === 0 && (
                   <tr>
-                    <td colSpan={7} className="px-6 py-12 text-center text-slate-400">
+                    <td colSpan={5} className="px-6 py-12 text-center text-slate-400">
                       Add products from the catalog above or create a custom line item.
                     </td>
                   </tr>
                 )}
                 {items.map((item) => {
-                  const lineTotal = (item.quantity * item.unit_price) - item.discount_amount + (((item.quantity * item.unit_price) - item.discount_amount) * (item.tax_rate / 100));
+                  const lineTotal = item.quantity * item.unit_price;
                   return (
                     <tr key={item.id} className="group hover:bg-slate-50/50">
                       <td className="px-6 py-3">
@@ -374,22 +364,6 @@ export default function QuotationForm({ customers, templates, products, business
                           type="number" min="0" step="0.01" value={item.unit_price} 
                           onChange={(e) => handleItemChange(item.id, "unit_price", Number(e.target.value))} 
                           required 
-                          readOnly={!!item.product_id}
-                          className={`rounded-lg h-9 ${item.product_id ? "bg-slate-50 text-slate-500 border-slate-200" : ""}`} 
-                        />
-                      </td>
-                      <td className="px-4 py-3">
-                        <Input 
-                          type="number" min="0" step="0.01" value={item.discount_amount} 
-                          onChange={(e) => handleItemChange(item.id, "discount_amount", Number(e.target.value))} 
-                          readOnly={!!item.product_id}
-                          className={`rounded-lg h-9 ${item.product_id ? "bg-slate-50 text-slate-500 border-slate-200" : ""}`} 
-                        />
-                      </td>
-                      <td className="px-4 py-3">
-                        <Input 
-                          type="number" min="0" max="100" step="0.1" value={item.tax_rate} 
-                          onChange={(e) => handleItemChange(item.id, "tax_rate", Number(e.target.value))} 
                           readOnly={!!item.product_id}
                           className={`rounded-lg h-9 ${item.product_id ? "bg-slate-50 text-slate-500 border-slate-200" : ""}`} 
                         />
@@ -419,22 +393,25 @@ export default function QuotationForm({ customers, templates, products, business
       </Card>
 
       <div className="flex justify-end">
-        <Card className="w-80 rounded-2xl shadow-sm border-slate-200">
+        <Card className="w-full md:w-80 rounded-2xl shadow-sm border-slate-200">
           <CardContent className="p-6 space-y-3">
             <div className="flex justify-between text-sm text-slate-500">
               <span>Subtotal</span>
               <span>₹{calculateSubtotal().toFixed(2)}</span>
             </div>
-            {calculateTotalDiscount() > 0 && (
-              <div className="flex justify-between text-sm text-amber-600">
-                <span>Discount</span>
+            {globalDiscountRate > 0 && (
+              <div className="flex justify-between items-center text-sm text-slate-500">
+                <span>Discount ({globalDiscountRate}%)</span>
                 <span>-₹{calculateTotalDiscount().toFixed(2)}</span>
               </div>
             )}
-            <div className="flex justify-between text-sm text-slate-500">
-              <span>Tax</span>
-              <span>₹{calculateTotalTax().toFixed(2)}</span>
-            </div>
+            
+            {globalTaxRate > 0 && (
+              <div className="flex justify-between items-center text-sm text-slate-500">
+                <span>Tax ({globalTaxRate}%)</span>
+                <span>₹{calculateTotalTax().toFixed(2)}</span>
+              </div>
+            )}
             <div className="pt-3 border-t border-slate-200 flex justify-between font-bold text-lg">
               <span>Grand Total</span>
               <span>₹{calculateGrandTotal().toFixed(2)}</span>

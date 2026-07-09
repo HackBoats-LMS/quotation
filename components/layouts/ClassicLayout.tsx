@@ -109,7 +109,7 @@ const styles = StyleSheet.create({
 
 export default function ClassicLayout({ quotation, items, dict, hasBackground }: any) {
   return (
-    <View style={{ padding: 50, height: "100%", fontFamily: "Helvetica", backgroundColor: hasBackground ? 'transparent' : '#ffffff' }}>
+    <View style={{ paddingHorizontal: 50, fontFamily: "Helvetica", backgroundColor: hasBackground ? 'transparent' : '#ffffff' }}>
       <View style={[styles.header, hasBackground ? { borderBottomWidth: 0 } : {}]}>
         {!hasBackground && (
           <View style={[styles.companyInfo, { alignItems: "flex-start" }]}>
@@ -155,7 +155,7 @@ export default function ClassicLayout({ quotation, items, dict, hasBackground }:
           <Text style={[styles.tableHeaderCell, styles.col4]}>AMOUNT</Text>
         </View>
         {items.map((item: any, index: number) => (
-          <View key={item.id || index} style={styles.tableRow}>
+          <View key={item.id || index} style={styles.tableRow} wrap={false}>
             <Text style={[styles.col1, { color: "#0f172a", fontWeight: "bold" }]}>{item.product_name || item.description}</Text>
             <Text style={[styles.col2, { color: "#334155" }]}>{item.quantity}</Text>
             <Text style={[styles.col3, { color: "#334155" }]}>Rs. {Number(item?.unit_price || 0).toFixed(2)}</Text>
@@ -187,7 +187,7 @@ export default function ClassicLayout({ quotation, items, dict, hasBackground }:
         </View>
       </View>
 
-      <View style={styles.footer}>
+      <View style={styles.footer} fixed>
         <Text>Thank you for your business.</Text>
         {dict.company_name && <Text style={{ marginTop: 4 }}>{dict.company_name} • {dict.company_email || ''}</Text>}
       </View>

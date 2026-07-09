@@ -2,9 +2,9 @@ import { Text, View } from "@react-pdf/renderer";
 
 export default function ModernLayout({ quotation, items, dict, hasBackground }: any) {
   return (
-    <View style={{ height: "100%", backgroundColor: hasBackground ? 'transparent' : '#ffffff', fontFamily: "Helvetica" }}>
+    <View style={{ backgroundColor: hasBackground ? 'transparent' : '#ffffff', fontFamily: "Helvetica" }}>
       {/* Header Block */}
-      <View style={{ backgroundColor: hasBackground ? 'transparent' : '#f1f8f6', padding: 40, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
+      <View style={{ backgroundColor: hasBackground ? 'transparent' : '#f1f8f6', paddingHorizontal: 40, paddingBottom: 40, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
         {!hasBackground && (
           <View style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start' }}>
             <View style={{ marginBottom: 4 }}><Text style={{ color: '#94a3b8', fontSize: 10 }}>Quotation by</Text></View>
@@ -65,7 +65,7 @@ export default function ModernLayout({ quotation, items, dict, hasBackground }: 
           <Text style={{ width: '20%', color: '#ffffff', fontWeight: 'bold', fontSize: 10, textAlign: 'right' }}>Amount</Text>
         </View>
         {items.map((item: any, index: number) => (
-          <View key={item.id || index} style={{ flexDirection: 'row', padding: 12, backgroundColor: index % 2 === 0 ? '#ffffff' : '#f1f8f6' }}>
+          <View key={item.id || index} style={{ flexDirection: 'row', padding: 12, backgroundColor: index % 2 === 0 ? '#ffffff' : '#f1f8f6' }} wrap={false}>
             <Text style={{ width: '45%', color: '#0f172a', fontSize: 10 }}>{index + 1}.  {item.product_name || item.description}</Text>
             <Text style={{ width: '15%', color: '#0f172a', fontSize: 10, textAlign: 'center' }}>{item.quantity}</Text>
             <Text style={{ width: '20%', color: '#0f172a', fontSize: 10, textAlign: 'right' }}>Rs. {Number(item?.unit_price || 0).toFixed(2)}</Text>
@@ -101,7 +101,7 @@ export default function ModernLayout({ quotation, items, dict, hasBackground }: 
       </View>
 
       {/* Footer */}
-      <View style={{ position: 'absolute', bottom: 0, left: 0, right: 0, backgroundColor: '#f1f8f6', padding: 40, display: 'flex', flexDirection: 'column' }}>
+      <View style={{ position: 'absolute', bottom: 0, left: 0, right: 0, backgroundColor: '#f1f8f6', padding: 40, display: 'flex', flexDirection: 'column' }} fixed>
         <View style={{ marginBottom: 8 }}><Text style={{ color: '#0f172a', fontWeight: 'bold', fontSize: 10 }}>Terms and Conditions</Text></View>
         <View style={{ marginBottom: 4 }}><Text style={{ color: '#475569', fontSize: 8 }}>1. Please pay within 15 days from the date of invoice.</Text></View>
         <View style={{ marginBottom: 12 }}><Text style={{ color: '#475569', fontSize: 8 }}>2. Please quote invoice number when remitting funds.</Text></View>

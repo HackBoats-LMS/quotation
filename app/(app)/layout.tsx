@@ -14,6 +14,7 @@ import { getSession } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import LogoutButton from "@/components/dashboard/logout-button";
 import { redirect } from "next/navigation";
+import MobileNav from "@/components/MobileNav";
 
 export default async function AppLayout({ children }: { children: ReactNode }) {
   const session = await getSession();
@@ -33,10 +34,33 @@ export default async function AppLayout({ children }: { children: ReactNode }) {
     businessName = business.name;
   }
 
+  const navLinks = (
+    <>
+      <nav className="flex-1 px-4 py-4 space-y-1 overflow-y-auto">
+        <NavLink href="/dashboard" icon={<LayoutDashboard size={18} />}>Dashboard</NavLink>
+        <NavLink href="/products" icon={<Package size={18} />}>Products</NavLink>
+        <NavLink href="/templates" icon={<FileBox size={18} />}>Templates</NavLink>
+        <NavLink href="/customers" icon={<Users size={18} />}>Customers</NavLink>
+        <NavLink href="/quotations" icon={<FileText size={18} />}>Quotations</NavLink>
+        <NavLink href="/settings/business" icon={<Settings size={18} />}>Settings</NavLink>
+      </nav>
+
+      <div className="p-4 border-t border-slate-200">
+        <LogoutButton />
+      </div>
+    </>
+  );
+
   return (
-    <div className="flex h-screen overflow-hidden bg-slate-50">
-      {/* Sidebar */}
-      <aside className="w-64 flex-shrink-0 bg-white border-r border-slate-200 flex flex-col">
+    <div className="flex h-screen overflow-hidden bg-slate-50 flex-col md:flex-row">
+      
+      {/* Mobile Sidebar Trigger & Overlay */}
+      <MobileNav businessName={businessName}>
+        {navLinks}
+      </MobileNav>
+
+      {/* Desktop Sidebar */}
+      <aside className="hidden md:flex w-64 flex-shrink-0 bg-white border-r border-slate-200 flex-col">
         <div className="h-16 flex items-center px-6 border-b border-slate-200">
           <div className="flex items-center gap-2 text-xl font-semibold tracking-tight">
             <div className="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center text-white">
@@ -51,18 +75,7 @@ export default async function AppLayout({ children }: { children: ReactNode }) {
           <span className="text-sm font-semibold truncate w-full">{businessName}</span>
         </div>
 
-        <nav className="flex-1 px-4 py-4 space-y-1 overflow-y-auto">
-          <NavLink href="/dashboard" icon={<LayoutDashboard size={18} />}>Dashboard</NavLink>
-          <NavLink href="/products" icon={<Package size={18} />}>Products</NavLink>
-          <NavLink href="/templates" icon={<FileBox size={18} />}>Templates</NavLink>
-          <NavLink href="/customers" icon={<Users size={18} />}>Customers</NavLink>
-          <NavLink href="/quotations" icon={<FileText size={18} />}>Quotations</NavLink>
-          <NavLink href="/settings/business" icon={<Settings size={18} />}>Settings</NavLink>
-        </nav>
-
-        <div className="p-4 border-t border-slate-200">
-          <LogoutButton />
-        </div>
+        {navLinks}
       </aside>
 
       {/* Main Content */}
