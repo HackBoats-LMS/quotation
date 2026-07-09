@@ -34,6 +34,7 @@ export default async function NewQuotationPage() {
   // Serialize Prisma models containing Decimals to plain objects for the Client Component
   const serializedCustomers = JSON.parse(JSON.stringify(customers));
   const serializedProducts = JSON.parse(JSON.stringify(products));
+  const serializedBusiness = JSON.parse(JSON.stringify(business));
 
   return (
     <div className="p-8 max-w-5xl mx-auto">
@@ -46,7 +47,7 @@ export default async function NewQuotationPage() {
         customers={serializedCustomers} 
         templates={templates || []} 
         products={serializedProducts}
-        business={business}
+        business={serializedBusiness}
       />
     </div>
   );

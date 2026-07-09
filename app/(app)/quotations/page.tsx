@@ -38,8 +38,8 @@ export default async function QuotationsPage() {
   };
 
   return (
-    <div className="p-8 max-w-7xl mx-auto space-y-8">
-      <div className="flex justify-between items-center">
+    <div className="p-4 md:p-8 max-w-7xl mx-auto space-y-8">
+      <div className="flex flex-col md:flex-row md:justify-between items-start md:items-center gap-4">
         <div>
           <h1 className="text-3xl font-bold tracking-tight">Quotations</h1>
           <p className="text-slate-500 mt-1">Manage and track your generated quotations.</p>
@@ -69,8 +69,8 @@ export default async function QuotationsPage() {
           </CardContent>
         </Card>
       ) : (
-        <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
-          <table className="w-full text-sm text-left">
+        <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden overflow-x-auto">
+          <table className="w-full text-sm text-left min-w-[600px]">
             <thead className="bg-slate-50 text-slate-500 font-medium border-b border-slate-200 uppercase text-xs tracking-wider">
               <tr>
                 <th className="px-6 py-4">Quote No.</th>

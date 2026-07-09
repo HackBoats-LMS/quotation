@@ -188,7 +188,7 @@ export default function QuotationPDF({ quotation, items, business, customer, tem
 
   return (
     <Document>
-      <Page size={template?.layout === "A4 Landscape" ? "A4" : "A4"} orientation={template?.layout === "A4 Landscape" ? "landscape" : "portrait"} style={[styles.page, { padding: 0, backgroundColor: templateSettings.backgroundColor || '#FFFFFF' }]}>
+      <Page size={template?.layout === "A4 Landscape" ? "A4" : "A4"} orientation={template?.layout === "A4 Landscape" ? "landscape" : "portrait"} style={[styles.page, { paddingTop: 40, paddingBottom: 80, paddingHorizontal: 0, backgroundColor: templateSettings.backgroundColor || '#FFFFFF' }]}>
         {bgImage && (
           <PDFImage 
             src={bgImage} 
@@ -199,7 +199,7 @@ export default function QuotationPDF({ quotation, items, business, customer, tem
         
         {/* Render elements based on template layout */}
         {templateElements.length > 0 ? (
-          <View style={{ padding: 50, flexDirection: "row", flexWrap: "wrap", width: "100%" }}>
+          <View style={{ paddingHorizontal: 50, flexDirection: "row", flexWrap: "wrap", width: "100%" }}>
             {templateElements.flatMap((el: any) => {
               const result = [];
               
@@ -280,7 +280,7 @@ export default function QuotationPDF({ quotation, items, business, customer, tem
                       <Text style={[styles.tableHeaderCell, styles.col4, { color: headerColor }]}>AMOUNT</Text>
                     </View>
                     {items.map((item: any, index: number) => (
-                      <View key={item.id || index} style={[styles.tableRow, { paddingHorizontal: 5, borderBottomColor: borderColor, borderBottomWidth: borderSize }]}>
+                      <View key={item.id || index} style={[styles.tableRow, { paddingHorizontal: 5, borderBottomColor: borderColor, borderBottomWidth: borderSize }]} wrap={false}>
                         <Text style={[styles.col1, { color: rowColor }]}>{item.product_name || item.description}</Text>
                         <Text style={[styles.col2, { color: rowColor }]}>{item.quantity}</Text>
                       <Text style={[styles.col3, { color: rowColor }]}>Rs. {Number(item?.unit_price || 0).toFixed(2)}</Text>

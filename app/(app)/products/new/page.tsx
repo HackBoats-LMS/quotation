@@ -18,8 +18,6 @@ export default function NewProductPage() {
     category: "",
     unit_price: 0,
     currency: "USD",
-    tax_percentage: 0,
-    discount_percentage: 0,
     unit_type: "Piece",
     is_active: true
   });
@@ -117,15 +115,6 @@ export default function NewProductPage() {
               <div className="space-y-2">
                 <Label htmlFor="currency">Currency</Label>
                 <Input id="currency" name="currency" value={formData.currency} onChange={handleChange} className="rounded-xl" />
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="tax_percentage">Default Tax (%)</Label>
-                <Input id="tax_percentage" name="tax_percentage" type="number" step="0.1" min="0" value={formData.tax_percentage} onChange={handleChange} className="rounded-xl" />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="discount_percentage">Default Discount (%)</Label>
-                <Input id="discount_percentage" name="discount_percentage" type="number" step="0.1" min="0" value={formData.discount_percentage} onChange={handleChange} className="rounded-xl" />
               </div>
             </div>
             

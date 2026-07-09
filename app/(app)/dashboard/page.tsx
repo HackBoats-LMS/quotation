@@ -43,36 +43,26 @@ export default async function DashboardPage() {
 
   const totalQuotations = quotationsList.length || 0;
   
-  // Since the new schema does not have a status field, we'll just mock these for now,
-  // or default to Draft. The /api doesn't seem to insert a status field.
-  const draftQuotations = totalQuotations; 
-  const sentQuotations = 0;
-  const acceptedQuotations = 0;
+
 
   const recentQuotations = quotationsList.slice(0, 5) || [];
 
   return (
-    <div className="p-8 max-w-7xl mx-auto space-y-8">
-      <div className="flex justify-between items-center">
+    <div className="p-4 md:p-8 max-w-7xl mx-auto space-y-8">
+      <div className="flex flex-col md:flex-row md:justify-between items-start md:items-center gap-4">
         <div>
           <h1 className="text-3xl font-bold tracking-tight">Dashboard</h1>
           <p className="text-slate-500 mt-1">Welcome back, {business.name}! Here's an overview of your business.</p>
         </div>
         <div className="flex gap-3">
-          <Link href="/templates/new">
-            <Button variant="outline" className="rounded-xl">Create Template</Button>
-          </Link>
           <Link href="/quotations/new">
             <Button className="rounded-xl">New Quotation</Button>
           </Link>
         </div>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         <StatCard title="Total Quotations" value={totalQuotations} icon={<FileText className="text-blue-600" />} />
-        <StatCard title="Drafts" value={draftQuotations} icon={<Clock className="text-slate-600" />} />
-        <StatCard title="Sent" value={sentQuotations} icon={<Send className="text-amber-600" />} />
-        <StatCard title="Accepted" value={acceptedQuotations} icon={<CheckCircle className="text-emerald-600" />} />
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
@@ -99,9 +89,6 @@ export default async function DashboardPage() {
                     </div>
                     <div className="text-right">
                       <p className="font-semibold">${quote.grand_total?.toNumber().toFixed(2)}</p>
-                      <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-slate-100 text-slate-800">
-                        Draft
-                      </span>
                     </div>
                   </div>
                 ))}
@@ -115,9 +102,6 @@ export default async function DashboardPage() {
             <CardTitle>Quick Actions</CardTitle>
           </CardHeader>
           <CardContent className="space-y-3">
-            <Link href="/templates/new" className="block p-4 border border-slate-100 rounded-xl hover:bg-slate-50 transition-colors font-medium">
-              + Create Template
-            </Link>
             <Link href="/settings/business" className="block p-4 border border-slate-100 rounded-xl hover:bg-slate-50 transition-colors font-medium">
               ⚙️ Update Business Info
             </Link>

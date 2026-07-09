@@ -2,7 +2,7 @@ import { Text, View } from "@react-pdf/renderer";
 
 export default function MinimalLayout({ quotation, items, dict, hasBackground }: any) {
   return (
-    <View style={{ padding: 60, height: "100%", backgroundColor: hasBackground ? 'transparent' : '#ffffff', fontFamily: "Helvetica" }}>
+    <View style={{ paddingHorizontal: 60, backgroundColor: hasBackground ? 'transparent' : '#ffffff', fontFamily: "Helvetica" }}>
       {/* Header */}
       <View style={{ flexDirection: "row", justifyContent: hasBackground ? "flex-end" : "space-between", marginBottom: 60 }}>
         {!hasBackground && (
@@ -40,7 +40,7 @@ export default function MinimalLayout({ quotation, items, dict, hasBackground }:
         </View>
         
         {items.map((item: any, index: number) => (
-          <View key={item.id || index} style={{ flexDirection: "row", paddingVertical: 12 }}>
+          <View key={item.id || index} style={{ flexDirection: "row", paddingVertical: 12 }} wrap={false}>
             <Text style={{ width: "50%", fontSize: 11, color: "#334155" }}>{item.product_name || item.description}</Text>
             <Text style={{ width: "15%", fontSize: 11, color: "#64748b", textAlign: "center" }}>{item.quantity}</Text>
             <Text style={{ width: "15%", fontSize: 11, color: "#64748b", textAlign: "right" }}>Rs. {Number(item?.unit_price || 0).toFixed(2)}</Text>
@@ -76,7 +76,7 @@ export default function MinimalLayout({ quotation, items, dict, hasBackground }:
       </View>
 
       {/* Footer */}
-      <View style={{ position: 'absolute', bottom: 60, left: 60, right: 60 }}>
+      <View style={{ position: 'absolute', bottom: 60, left: 60, right: 60 }} fixed>
         <Text style={{ fontSize: 9, color: "#cbd5e1", textAlign: "center" }}>Thank you for your business. {dict.company_name}</Text>
       </View>
     </View>

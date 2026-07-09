@@ -48,8 +48,6 @@ export default async function EditProductPage(props: { params: Promise<{ id: str
       unit_type: formData.get("unit_type"),
       unit_price: parseFloat(formData.get("unit_price") as string) || 0,
       currency: formData.get("currency"),
-      tax_percentage: parseFloat(formData.get("tax_percentage") as string) || 0,
-      discount_percentage: parseFloat(formData.get("discount_percentage") as string) || 0,
     }).eq("id", params.id);
     
     redirect("/products");
@@ -127,15 +125,6 @@ export default async function EditProductPage(props: { params: Promise<{ id: str
               <div className="space-y-2">
                 <Label htmlFor="currency">Currency</Label>
                 <Input id="currency" name="currency" defaultValue={product.currency} className="rounded-xl" />
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="tax_percentage">Default Tax (%)</Label>
-                <Input id="tax_percentage" name="tax_percentage" type="number" step="0.1" min="0" defaultValue={product.tax_percentage} className="rounded-xl" />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="discount_percentage">Default Discount (%)</Label>
-                <Input id="discount_percentage" name="discount_percentage" type="number" step="0.1" min="0" defaultValue={product.discount_percentage} className="rounded-xl" />
               </div>
             </div>
             
